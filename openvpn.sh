@@ -101,7 +101,9 @@ shift $(( OPTIND - 1 ))
 [[ "${TIMEZONE:-""}" ]] && timezone "$TIMEZONE"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)
 
-if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
+if ps -ef | grep -q openvpn; then
+    echo "Service already running, please restart container to apply changes"
+elif [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
 elif [[ $# -ge 1 ]]; then
     echo "ERROR: command not found: $1"
