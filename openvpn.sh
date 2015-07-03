@@ -87,6 +87,8 @@ The 'command' (if provided and valid) will be run instead of openvpn
     exit $RC
 }
 
+cd /tmp
+
 while getopts ":ht:v:" opt; do
     case "$opt" in
         h) usage ;;
