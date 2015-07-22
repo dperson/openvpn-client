@@ -18,6 +18,21 @@
 
 set -o nounset                              # Treat unset variables as an error
 
+### firewall: firewall all output not DNS/VPN that's not over the VPN
+# Arguments:
+#   none)
+# Return: configured firewall
+firewall() {
+    iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    iptables -A OUTPUT -o lo -j ACCEPT
+    iptables -A OUTPUT -o tap0 -j ACCEPT
+    iptables -A OUTPUT -o tun0 -j ACCEPT
+    iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
+    iptables -A OUTPUT -p tcp -m tcp --dport 1194 -j ACCEPT
+    iptables -A OUTPUT -p udp -m udp --dport 1194 -j ACCEPT
+    iptables -A OUTPUT -j DROP
+}
+
 ### timezone: Set the timezone for the container
 # Arguments:
 #   timezone) for example EST5EDT
@@ -89,9 +104,10 @@ The 'command' (if provided and valid) will be run instead of openvpn
 
 cd /tmp
 
-while getopts ":ht:v:" opt; do
+while getopts ":hft:v:" opt; do
     case "$opt" in
         h) usage ;;
+        f) firewall ;;
         t) timezone "$OPTARG" ;;
         v) eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $OPTARG) ;;
         "?") echo "Unknown option: -$OPTARG"; usage 1 ;;
@@ -113,13 +129,5 @@ elif ps -ef | egrep -v 'grep|openvpn.sh' | grep -q openvpn; then
 else
     [[ -e /vpn/vpn.conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
     [[ -e /vpn/vpn-ca.crt ]] || { echo "ERROR: VPN cert missing!"; sleep 120; }
-    iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    iptables -A OUTPUT -o lo -j ACCEPT
-    iptables -A OUTPUT -o tap0 -j ACCEPT
-    iptables -A OUTPUT -o tun0 -j ACCEPT
-    iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
-    iptables -A OUTPUT -p tcp -m tcp --dport 1194 -j ACCEPT
-    iptables -A OUTPUT -p udp -m udp --dport 1194 -j ACCEPT
-    iptables -A OUTPUT -j DROP
     exec openvpn --config /vpn/vpn.conf
 fi
