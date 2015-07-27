@@ -41,6 +41,8 @@ Once it's up other containers can be started using it's network connection:
     Usage: openvpn.sh [-opt] [command]
     Options (fields in '[]' are optional, '<>' are required):
         -h          This help
+        -f          Set firewall rules so that only the VPN and DNS are allowed to
+                    send traffic to the internet (IE if VPN is down it's offline)
         -t ""       Configure timezone
                     possible arg: "[timezone]" - zoneinfo timezone for container
         -v "<server;user;password>" Configure OpenVPN
@@ -96,6 +98,17 @@ Or you can store it in the container:
                 --device /dev/net/tun --name openvpn -d dperson/openvpn \
                 -v "vpn.server.name;username;password" tee /vpn/vpn-ca.crt \
                 >/dev/null
+    sudo docker restart openvpn
+
+### Firewall
+
+It's just a simple command line argument (`-f`) to turn on the firewall, and
+block all outbound traffic if the VPN is down.
+
+    sudo docker run --cap-add=NET_ADMIN --device /dev/net/tun --name openvpn \
+                -v /some/path:/vpn -d dperson/openvpn -f \
+                -v "vpn.server.name;username;password"
+    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker restart openvpn
 
 # User Feedback
