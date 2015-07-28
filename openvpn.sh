@@ -23,6 +23,7 @@ set -o nounset                              # Treat unset variables as an error
 #   none)
 # Return: configured firewall
 firewall() {
+    iptables -F OUTPUT
     iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     iptables -A OUTPUT -o lo -j ACCEPT
     iptables -A OUTPUT -o tap0 -j ACCEPT
@@ -109,7 +110,7 @@ cd /tmp
 while getopts ":hft:v:" opt; do
     case "$opt" in
         h) usage ;;
-        f) firewall ;;
+        f) firewall; touch /vpn/.firewall ;;
         t) timezone "$OPTARG" ;;
         v) eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $OPTARG) ;;
         "?") echo "Unknown option: -$OPTARG"; usage 1 ;;
@@ -118,6 +119,7 @@ while getopts ":hft:v:" opt; do
 done
 shift $(( OPTIND - 1 ))
 
+[[ "${FIREWALL:-""}" || -e /vpn/.firewall ]] && firewall
 [[ "${TIMEZONE:-""}" ]] && timezone "$TIMEZONE"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)
 
