@@ -25,7 +25,7 @@ mode.
 ## Hosting an OpenVPN client instance
 
     sudo docker run --cap-add=NET_ADMIN --device /dev/net/tun --name openvpn \
-                -v /some/path:/vpn -d dperson/openvpn \
+                -v /some/path:/vpn -d dperson/openvpn-client \
                 -v "vpn.server.name;username;password"
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker restart openvpn
@@ -36,7 +36,7 @@ Once it's up other containers can be started using it's network connection:
 
 ## Configuration
 
-    sudo docker run -it --rm dperson/openvpn -h
+    sudo docker run -it --rm dperson/openvpn-client -h
 
     Usage: openvpn.sh [-opt] [command]
     Options (fields in '[]' are optional, '<>' are required):
@@ -66,7 +66,7 @@ Any of the commands can be run at creation with `docker run` or later with
 `docker exec openvpn.sh` (as of version 1.3 of docker).
 
     sudo docker run --cap-add=NET_ADMIN --device /dev/net/tun --name openvpn \
-                -v /some/path:/vpn -d dperson/openvpn -t EST5EDT \
+                -v /some/path:/vpn -d dperson/openvpn-client -t EST5EDT \
                 -v "vpn.server.name;username;password"
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker restart openvpn
@@ -74,7 +74,7 @@ Any of the commands can be run at creation with `docker run` or later with
 Will get you the same settings as:
 
     sudo docker run --cap-add=NET_ADMIN --device /dev/net/tun --name openvpn \
-                -v /some/path:/vpn -d dperson/openvpn \
+                -v /some/path:/vpn -d dperson/openvpn-client \
                 -v "vpn.server.name;username;password"
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker restart openvpn
@@ -87,7 +87,7 @@ In order to work you must provide VPN configuration and the certificate. You can
 use external storage for `/vpn`:
 
     sudo docker run --cap-add=NET_ADMIN --device /dev/net/tun --name openvpn \
-                -v /some/path:/vpn -d dperson/openvpn \
+                -v /some/path:/vpn -d dperson/openvpn-client \
                 -v "vpn.server.name;username;password"
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker restart openvpn
@@ -95,7 +95,7 @@ use external storage for `/vpn`:
 Or you can store it in the container:
 
     cat /path/to/vpn.crt | sudo docker run -i --cap-add=NET_ADMIN \
-                --device /dev/net/tun --name openvpn -d dperson/openvpn \
+                --device /dev/net/tun --name openvpn -d dperson/openvpn-client \
                 -v "vpn.server.name;username;password" tee /vpn/vpn-ca.crt \
                 >/dev/null
     sudo docker restart openvpn
@@ -106,7 +106,7 @@ It's just a simple command line argument (`-f`) to turn on the firewall, and
 block all outbound traffic if the VPN is down.
 
     sudo docker run --cap-add=NET_ADMIN --device /dev/net/tun --name openvpn \
-                -v /some/path:/vpn -d dperson/openvpn -f \
+                -v /some/path:/vpn -d dperson/openvpn-client -f \
                 -v "vpn.server.name;username;password"
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker restart openvpn
@@ -116,4 +116,4 @@ block all outbound traffic if the VPN is down.
 ## Issues
 
 If you have any problems with or questions about this image, please contact me
-through a [GitHub issue](https://github.com/dperson/openvpn/issues).
+through a [GitHub issue](https://github.com/dperson/openvpn-client/issues).
