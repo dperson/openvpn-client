@@ -1,4 +1,4 @@
-[![logo](http://fc05.deviantart.net/fs70/i/2013/010/6/5/openvpn_icon_by_archeinre-d5r1nls.png)](https://openvpn.net/)
+[![logo](https://raw.githubusercontent.com/dperson/openvpn-client/master/logo.png)](https://openvpn.net/)
 
 # OpenVPN
 
