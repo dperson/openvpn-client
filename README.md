@@ -55,29 +55,34 @@ Once it's up other containers can be started using it's network connection:
 
 ENVIROMENT VARIABLES (only available with `docker run`)
 
- * `TIMEZONE` - As above, set a zoneinfo timezone, IE `EST5EDT`
+ * `TZ` - As above, set a zoneinfo timezone, IE `EST5EDT`
  * `VPN` - As above, setup a VPN connection
 
 ## Examples
 
-### Timezone
-
 Any of the commands can be run at creation with `docker run` or later with
 `docker exec openvpn.sh` (as of version 1.3 of docker).
 
+### Setting the Timezone
+
+    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run --cap-add=NET_ADMIN --device /dev/net/tun --name openvpn \
                 -v /some/path:/vpn -d dperson/openvpn -t EST5EDT \
                 -v "vpn.server.name;username;password"
+
+OR using `environment variables`
+
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
-    sudo docker restart openvpn
+    sudo docker run --cap-add=NET_ADMIN --device /dev/net/tun --name openvpn \
+                -v /some/path:/vpn -e TZ=EST5EDT -d dperson/openvpn \
+                -v "vpn.server.name;username;password"
 
 Will get you the same settings as:
 
+    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run --cap-add=NET_ADMIN --device /dev/net/tun --name openvpn \
                 -v /some/path:/vpn -d dperson/openvpn \
                 -v "vpn.server.name;username;password"
-    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
-    sudo docker restart openvpn
     sudo docker exec openvpn openvpn.sh -t EST5EDT ls -AlF /etc/localtime
     sudo docker restart openvpn
 
