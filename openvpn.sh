@@ -94,8 +94,8 @@ usage() { local RC=${1:-0}
     echo "Usage: ${0##*/} [-opt] [command]
 Options (fields in '[]' are optional, '<>' are required):
     -h          This help
-    -f          Set firewall rules so that only the VPN and DNS are allowed to
-                send traffic to the internet (IE if VPN is down it's offline)
+    -f          Firewall rules so that only the VPN and DNS are allowed to
+                send internet traffic (IE if VPN is down it's offline)
     -t \"\"       Configure timezone
                 possible arg: \"[timezone]\" - zoneinfo timezone for container
     -v \"<server;user;password>\" Configure OpenVPN
