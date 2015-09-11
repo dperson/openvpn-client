@@ -11,6 +11,7 @@ RUN export DEBIAN_FRONTEND='noninteractive' && \
     addgroup --system vpn
 COPY openvpn.sh /usr/bin/
 
-VOLUME ["/vpn"]
+VOLUME ["/run", "/tmp", "/var/cache", "/var/lib", "/var/log", "/var/tmp", \
+            "/vpn"]
 
 ENTRYPOINT ["openvpn.sh"]
