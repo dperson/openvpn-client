@@ -45,7 +45,7 @@ timezone() { local timezone="${1:-EST5EDT}"
     }
 
     if [[ $(cat /etc/timezone) != $timezone ]]; then
-        echo "$timezone" > /etc/timezone
+        echo "$timezone" >/etc/timezone
         ln -sf /usr/share/zoneinfo/$timezone /etc/localtime
         dpkg-reconfigure -f noninteractive tzdata >/dev/null 2>&1
     fi
@@ -60,28 +60,28 @@ timezone() { local timezone="${1:-EST5EDT}"
 vpn() { local server="$1" user="$2" pass="$3" \
             conf="/vpn/vpn.conf" auth="/vpn/vpn.auth"
 
-    cat > $conf << EOF
-client
-dev tun
-proto udp
-remote $server 1194
-resolv-retry infinite
-nobind
-persist-key
-persist-tun
-ca /vpn/vpn-ca.crt
-tls-client
-remote-cert-tls server
-auth-user-pass
-comp-lzo
-verb 1
-reneg-sec 0
-redirect-gateway def1
-auth-user-pass $auth
-EOF
+    cat >$conf <<-EOF
+		client
+		dev tun
+		proto udp
+		remote $server 1194
+		resolv-retry infinite
+		nobind
+		persist-key
+		persist-tun
+		ca /vpn/vpn-ca.crt
+		tls-client
+		remote-cert-tls server
+		auth-user-pass
+		comp-lzo
+		verb 1
+		reneg-sec 0
+		redirect-gateway def1
+		auth-user-pass $auth
+		EOF
 
-    echo "$user" > $auth
-    echo "$pass" >> $auth
+    echo "$user" >$auth
+    echo "$pass" >>$auth
     chmod 0600 $auth
 }
 
