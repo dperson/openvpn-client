@@ -22,6 +22,9 @@ or newer you can use the `--cap-add=NET_ADMIN` and `--device /dev/net/tun`
 options. Earlier versions, or with fig, and you'll have to run it in privileged
 mode.
 
+**NOTE 2**: If you have connectivity issues, please see the DNS instructions
+below.
+
 ## Hosting an OpenVPN client instance
 
     sudo docker run --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
@@ -129,6 +132,17 @@ block all outbound traffic if the VPN is down.
                 -v "vpn.server.name;username;password"
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker restart vpn
+
+### DNS Issues (May Look Like You Can't Connect To Anything)
+
+Often local DNS and/or your ISP won't be accessable from the new IP address you
+get from your VPN. You'll need to add the `--dns` command line option to the
+`docker run` statement. Here's an example of doing so, with a Google DNS server:
+
+    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
+    sudo docker run --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
+                --dns 8.8.4.4 -v /some/path:/vpn -d dperson/openvpn-client \
+                -v "vpn.server.name;username;password"
 
 # User Feedback
 
