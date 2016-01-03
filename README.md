@@ -37,6 +37,8 @@ Once it's up other containers can be started using it's network connection:
 
     sudo docker run --net=container:vpn -d some/docker-container
 
+## Local Network access to services connecting to the internet through the VPN.
+
 However to access them from your normal network (off the 'local' docker bridge),
 you'll also need to run a web proxy, like so:
 
