@@ -72,7 +72,7 @@ a concrete example:
 
     The 'command' (if provided and valid) will be run instead of openvpn
 
-ENVIROMENT VARIABLES (only available with `docker run`)
+ENVIRONMENT VARIABLES (only available with `docker run`)
 
  * `TZ` - As above, set a zoneinfo timezone, IE `EST5EDT`
  * `VPN` - As above, setup a VPN connection
