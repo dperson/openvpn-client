@@ -53,6 +53,15 @@ a concrete example:
     sudo docker run --name web -p 80:80 -p 443:443 --link vpn:bit \
                 -d dperson/nginx -w "http://bit:9091/transmission;/transmission"
 
+For multiple services (non-existant 'foo' used as an example):
+
+    sudo docker run --name bit --net=container:vpn -d dperson/transmission
+    sudo docker run --name foo --net=container:vpn -d dperson/foo
+    sudo docker run --name web -p 80:80 -p 443:443 --link vpn:bit \
+                --link vpn:foo -d dperson/nginx \
+                -w "http://bit:9091/transmission;/transmission" \
+                -w "http://foo:8000/foo;/foo"
+
 ## Configuration
 
     sudo docker run -it --rm dperson/openvpn-client -h
