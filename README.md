@@ -70,6 +70,7 @@ For multiple services (non-existant 'foo' used as an example):
     Usage: openvpn.sh [-opt] [command]
     Options (fields in '[]' are optional, '<>' are required):
         -h          This help
+        -d          Use the VPN provider's DNS resolvers
         -f          Firewall rules so that only the VPN and DNS are allowed to
                     send internet traffic (IE if VPN is down it's offline)
         -t ""       Configure timezone
@@ -86,6 +87,7 @@ ENVIRONMENT VARIABLES (only available with `docker run`)
 
  * `TZ` - As above, set a zoneinfo timezone, IE `EST5EDT`
  * `VPN` - As above, setup a VPN connection
+ * `DNS` - As above, Use the VPN provider's DNS resolvers
 
 ## Examples
 

@@ -18,6 +18,18 @@
 
 set -o nounset                              # Treat unset variables as an error
 
+### dns: setup openvpn client DNS
+# Arguments:
+#   none)
+# Return: conf file that uses VPN provider's DNS resolvers
+dns() { local conf="/vpn/vpn.conf"
+
+    echo "# This updates the resolvconf with dns settings" >>$conf
+    echo "script-security 2" >>$conf
+    echo "up /etc/openvpn/update-resolv-conf" >>$conf
+    echo "down /etc/openvpn/update-resolv-conf" >>$conf
+}
+
 ### firewall: firewall all output not DNS/VPN that's not over the VPN
 # Arguments:
 #   none)
@@ -94,6 +106,7 @@ usage() { local RC=${1:-0}
     echo "Usage: ${0##*/} [-opt] [command]
 Options (fields in '[]' are optional, '<>' are required):
     -h          This help
+    -d          Use the VPN provider's DNS resolvers
     -f          Firewall rules so that only the VPN and DNS are allowed to
                 send internet traffic (IE if VPN is down it's offline)
     -t \"\"       Configure timezone
@@ -109,9 +122,10 @@ The 'command' (if provided and valid) will be run instead of openvpn
     exit $RC
 }
 
-while getopts ":hft:v:" opt; do
+while getopts ":hdft:v:" opt; do
     case "$opt" in
         h) usage ;;
+        d) DNS=true ;;
         f) firewall; touch /vpn/.firewall ;;
         t) timezone "$OPTARG" ;;
         v) eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $OPTARG) ;;
@@ -124,6 +138,7 @@ shift $(( OPTIND - 1 ))
 [[ "${FIREWALL:-""}" || -e /vpn/.firewall ]] && firewall
 [[ "${TZ:-""}" ]] && timezone "$TZ"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)
+[[ "${DNS:-""}" ]] && dns
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
