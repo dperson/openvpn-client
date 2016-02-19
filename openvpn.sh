@@ -111,7 +111,7 @@ Options (fields in '[]' are optional, '<>' are required):
                 send internet traffic (IE if VPN is down it's offline)
     -t \"\"       Configure timezone
                 possible arg: \"[timezone]\" - zoneinfo timezone for container
-    -v \"<server;user;password>\" Configure OpenVPN
+    -v '<server;user;password>' Configure OpenVPN
                 required arg: \"<server>;<user>;<password>\"
                 <server> to connect to
                 <user> to authenticate as

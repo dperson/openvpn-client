@@ -29,7 +29,7 @@ below.
 
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 -v /some/path:/vpn -d dperson/openvpn-client \
-                -v "vpn.server.name;username;password"
+                -v 'vpn.server.name;username;password'
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker restart vpn
 
@@ -75,7 +75,7 @@ For multiple services (non-existant 'foo' used as an example):
                     send internet traffic (IE if VPN is down it's offline)
         -t ""       Configure timezone
                     possible arg: "[timezone]" - zoneinfo timezone for container
-        -v "<server;user;password>" Configure OpenVPN
+        -v '<server;user;password>' Configure OpenVPN
                     required arg: "<server>;<user>;<password>"
                     <server> to connect to
                     <user> to authenticate as
@@ -99,21 +99,21 @@ Any of the commands can be run at creation with `docker run` or later with
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 -v /some/path:/vpn -d dperson/openvpn-client -t EST5EDT \
-                -v "vpn.server.name;username;password"
+                -v 'vpn.server.name;username;password'
 
 OR using `environment variables`
 
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 -v /some/path:/vpn -e TZ=EST5EDT -d dperson/openvpn \
-                -v "vpn.server.name;username;password"
+                -v 'vpn.server.name;username;password'
 
 Will get you the same settings as:
 
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 -v /some/path:/vpn -d dperson/openvpn-client \
-                -v "vpn.server.name;username;password"
+                -v 'vpn.server.name;username;password'
     sudo docker exec -it vpn openvpn.sh -t EST5EDT ls -AlF /etc/localtime
     sudo docker restart vpn
 
@@ -124,7 +124,7 @@ use external storage for `/vpn`:
 
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 -v /some/path:/vpn -d dperson/openvpn-client \
-                -v "vpn.server.name;username;password"
+                -v 'vpn.server.name;username;password'
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker restart vpn
 
@@ -132,7 +132,7 @@ Or you can store it in the container:
 
     cat /path/to/vpn.crt | sudo docker run -it --cap-add=NET_ADMIN \
                 --device /dev/net/tun --name vpn -d dperson/openvpn-client \
-                -v "vpn.server.name;username;password" tee /vpn/vpn-ca.crt \
+                -v 'vpn.server.name;username;password' tee /vpn/vpn-ca.crt \
                 >/dev/null
     sudo docker restart vpn
 
@@ -143,7 +143,7 @@ block all outbound traffic if the VPN is down.
 
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 -v /some/path:/vpn -d dperson/openvpn-client -f \
-                -v "vpn.server.name;username;password"
+                -v 'vpn.server.name;username;password'
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker restart vpn
 
@@ -156,7 +156,7 @@ get from your VPN. You'll need to add the `--dns` command line option to the
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 --dns 8.8.4.4 -v /some/path:/vpn -d dperson/openvpn-client \
-                -v "vpn.server.name;username;password"
+                -v 'vpn.server.name;username;password'
 
 # User Feedback
 
