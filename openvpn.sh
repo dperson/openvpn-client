@@ -47,6 +47,15 @@ firewall() {
     iptables -A OUTPUT -j DROP
 }
 
+### return_route: add a route back to your network, so that return traffic works
+# Arguments:
+#   network) a CIDR specified network range
+# Return: configured return route
+return_route() { local gw network="$1"
+    gw=$(ip route | awk '/default/ {print $3}')
+    ip route add to $network via $gw dev eth0
+}
+
 ### timezone: Set the timezone for the container
 # Arguments:
 #   timezone) for example EST5EDT
@@ -110,6 +119,9 @@ Options (fields in '[]' are optional, '<>' are required):
     -d          Use the VPN provider's DNS resolvers
     -f          Firewall rules so that only the VPN and DNS are allowed to
                 send internet traffic (IE if VPN is down it's offline)
+    -r \"<network>\" CIDR network (IE 192.168.1.0/24)
+                required arg: \"<network>\"
+                <network> add a route to (allows replies once the VPN is up)
     -t \"\"       Configure timezone
                 possible arg: \"[timezone]\" - zoneinfo timezone for container
     -v '<server;user;password>' Configure OpenVPN
@@ -123,11 +135,12 @@ The 'command' (if provided and valid) will be run instead of openvpn
     exit $RC
 }
 
-while getopts ":hdft:v:" opt; do
+while getopts ":hdfr:t:v:" opt; do
     case "$opt" in
         h) usage ;;
         d) DNS=true ;;
         f) firewall; touch /vpn/.firewall ;;
+        r) return_route "$OPTARG" ;;
         t) timezone "$OPTARG" ;;
         v) eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $OPTARG) ;;
         "?") echo "Unknown option: -$OPTARG"; usage 1 ;;
@@ -137,6 +150,7 @@ done
 shift $(( OPTIND - 1 ))
 
 [[ "${FIREWALL:-""}" || -e /vpn/.firewall ]] && firewall
+[[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
 [[ "${TZ:-""}" ]] && timezone "$TZ"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)
 [[ "${DNS:-""}" ]] && dns

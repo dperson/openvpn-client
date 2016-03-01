@@ -73,6 +73,9 @@ For multiple services (non-existant 'foo' used as an example):
         -d          Use the VPN provider's DNS resolvers
         -f          Firewall rules so that only the VPN and DNS are allowed to
                     send internet traffic (IE if VPN is down it's offline)
+        -r "<network>" CIDR network (IE 192.168.1.0/24)
+                    required arg: "<network>"
+                    <network> add a route to (allows replies once the VPN is up)
         -t ""       Configure timezone
                     possible arg: "[timezone]" - zoneinfo timezone for container
         -v '<server;user;password>' Configure OpenVPN
@@ -85,9 +88,10 @@ For multiple services (non-existant 'foo' used as an example):
 
 ENVIRONMENT VARIABLES (only available with `docker run`)
 
+ * `DNS` - As above, Use the VPN provider's DNS resolvers
+ * `ROUTE` - As above, add a route to allow replies to your private network
  * `TZ` - As above, set a zoneinfo timezone, IE `EST5EDT`
  * `VPN` - As above, setup a VPN connection
- * `DNS` - As above, Use the VPN provider's DNS resolvers
 
 ## Examples
 
