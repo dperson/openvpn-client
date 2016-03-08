@@ -1,16 +1,22 @@
-FROM debian:jessie
+##################
+# OpenVPN Client #
+#   Dockerfile   #
+##################
+
+FROM alpine
 MAINTAINER David Personette <dperson@dperson.com>
 
 # Install openvpn
-RUN export DEBIAN_FRONTEND='noninteractive' && \
-    apt-get update -qq && \
-    apt-get install -qqy --no-install-recommends iptables openvpn \
-                $(apt-get -s dist-upgrade|awk '/^Inst.*ecurity/ {print $2}') &&\
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* && \
-    addgroup --system vpn
+RUN \
+    echo http://dl-4.alpinelinux.org/alpine/edge/testing >> /etc/apk/repositories && \
+    apk update && \
+    apk add bash shadow iptables openvpn && \
+    rm -rf /var/cache/apk/* && \
+    addgroup -S vpn
+
 COPY openvpn.sh /usr/bin/
 
 VOLUME ["/vpn"]
+WORKDIR /vpn
 
 ENTRYPOINT ["openvpn.sh"]
