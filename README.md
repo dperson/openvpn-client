@@ -25,12 +25,15 @@ mode.
 **NOTE 2**: If you have connectivity issues, please see the DNS instructions
 below.
 
+**NOTE 3**: If you need access to other non HTTP proxy-able ports, please see
+the Routing  instructions below.
+
 ## Hosting an OpenVPN client instance
 
+    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 -v /some/path:/vpn -d dperson/openvpn-client \
                 -v 'vpn.server.name;username;password'
-    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker restart vpn
 
 Once it's up other containers can be started using it's network connection:
@@ -62,6 +65,21 @@ For multiple services (non-existant 'foo' used as an example):
                 --link vpn:foo -d dperson/nginx \
                 -w "http://bit:9091/transmission;/transmission" \
                 -w "http://foo:8000/foo;/foo"
+
+## Routing for local access to non HTTP proxy-able ports
+
+The argument to the `-r` (route) command line argument must be your local
+network that you would connect to the server running the docker containers on.
+Running the following on your docker host should give you the correct network:
+`ip route | awk '!/ (docker0|br-)/ && /src/ {print $1}'`
+
+    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
+    sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
+                -v /some/path:/vpn -d dperson/openvpn-client \
+                -r 192.168.1.0/24 -v 'vpn.server.name;username;password'
+
+**NOTE**: if you don't use the `-v` to configure your VPN, then you'll have to
+make sure that `redirect-gateway def1` is set, otherwise routing may not work.
 
 ## Configuration
 
