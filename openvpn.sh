@@ -30,6 +30,33 @@ dns() { local conf="/vpn/vpn.conf"
     echo "down /etc/openvpn/update-resolv-conf" >>$conf
 }
 
+write_cert_vars() {
+cat >> /etc/openvpn/easy-rsa/vars << EOF
+    export KEY_NAME="${KEY_NAME}"
+    export KEY_COUNTRY="${KEY_COUNTRY}"
+    export KEY_PROVINCE="${KEY_PROVINCE}"
+    export KEY_CITY="${KEY_CITY}"
+    export KEY_ORG="${KEY_ORG}"
+    export KEY_EMAIL="${KEY_EMAIL}"
+    export KEY_OU="${KEY_OU}"
+EOF
+}
+
+autogen_cert() {
+    if [[ ! -f /vpn/vpn-ca.crt ]]; then
+        echo "Auto Generating keys for CA"
+        cp -r /usr/share/easy-rsa/ /etc/openvpn
+        mkdir -p /etc/openvpn/easy-rsa/keys
+        write_cert_vars
+
+        cd /etc/openvpn/easy-rsa
+        source ./vars
+        ./clean-all
+        ./pkitool --initca
+        cp keys/ca.crt /vpn/vpn-ca.crt
+    fi
+}
+
 ### firewall: firewall all output not DNS/VPN that's not over the VPN
 # Arguments:
 #   none)
@@ -116,6 +143,7 @@ usage() { local RC=${1:-0}
     echo "Usage: ${0##*/} [-opt] [command]
 Options (fields in '[]' are optional, '<>' are required):
     -h          This help
+    -a          Autogenerate CA cert if not exists
     -d          Use the VPN provider's DNS resolvers
     -f          Firewall rules so that only the VPN and DNS are allowed to
                 send internet traffic (IE if VPN is down it's offline)
@@ -135,10 +163,11 @@ The 'command' (if provided and valid) will be run instead of openvpn
     exit $RC
 }
 
-while getopts ":hdfr:t:v:" opt; do
+while getopts ":hdafr:t:v:" opt; do
     case "$opt" in
         h) usage ;;
         d) DNS=true ;;
+        a) AUTOGEN_CERT=true ;;
         f) firewall; touch /vpn/.firewall ;;
         r) return_route "$OPTARG" ;;
         t) timezone "$OPTARG" ;;
@@ -154,6 +183,7 @@ shift $(( OPTIND - 1 ))
 [[ "${TZ:-""}" ]] && timezone "$TZ"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)
 [[ "${DNS:-""}" ]] && dns
+[[ "${AUTOGEN_CERT:-""}" ]] && autogen_cert
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
