@@ -106,14 +106,22 @@ timezone() { local timezone="${1:-EST5EDT}"
 #   user) user name on VPN
 #   pass) password on VPN
 # Return: configured .ovpn file
-vpn() { local server="$1" user="$2" pass="$3" \
+vpn() { local server="$1" user="$2" pass="$3" proto="udp" port="1195" \
             conf="/vpn/vpn.conf" auth="/vpn/vpn.auth"
+
+    if [[ ! -z "${4-}" ]]; then
+        porto=$4
+    fi
+
+    if [[ ! -z "${5-}" ]]; then
+        port=$5
+    fi
 
     cat >$conf <<-EOF
 		client
 		dev tun
-		proto udp
-		remote $server 1194
+		proto $proto
+		remote $server $port
 		resolv-retry infinite
 		nobind
 		persist-key
