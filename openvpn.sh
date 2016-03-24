@@ -142,6 +142,14 @@ vpn() { local server="$1" user="$2" pass="$3" proto="udp" port="1195" \
     chmod 0600 $auth
 }
 
+externalvpn() { local url="$1"
+    conf="/vpn/vpn.conf"
+
+    if [[ ! -f $conf ]]; then
+        wget  -O $conf --no-check-certificate $url
+    fi
+}
+
 ### usage: Help
 # Arguments:
 #   none)
@@ -153,6 +161,7 @@ Options (fields in '[]' are optional, '<>' are required):
     -h          This help
     -a          Autogenerate CA cert if not exists
     -d          Use the VPN provider's DNS resolvers
+    -e '<url>' Pull external file from http
     -f          Firewall rules so that only the VPN and DNS are allowed to
                 send internet traffic (IE if VPN is down it's offline)
     -r \"<network>\" CIDR network (IE 192.168.1.0/24)
@@ -171,7 +180,7 @@ The 'command' (if provided and valid) will be run instead of openvpn
     exit $RC
 }
 
-while getopts ":hdafr:t:v:" opt; do
+while getopts ":hdafr:t:v:e:" opt; do
     case "$opt" in
         h) usage ;;
         d) DNS=true ;;
@@ -180,6 +189,7 @@ while getopts ":hdafr:t:v:" opt; do
         r) return_route "$OPTARG" ;;
         t) timezone "$OPTARG" ;;
         v) eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $OPTARG) ;;
+        e) eval externalvpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $OPTARG) ;;
         "?") echo "Unknown option: -$OPTARG"; usage 1 ;;
         ":") echo "No argument value for option: -$OPTARG"; usage 2 ;;
     esac
@@ -202,6 +212,6 @@ elif ps -ef | egrep -v 'grep|openvpn.sh' | grep -q openvpn; then
     echo "Service already running, please restart container to apply changes"
 else
     [[ -e /vpn/vpn.conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
-    [[ -e /vpn/vpn-ca.crt ]] || { echo "ERROR: VPN cert missing!"; sleep 120; }
+    [[ -e /vpn/vpn-ca.crt || ! -z $(grep \<ca\> /vpn/vpn.conf) ]] || { echo "ERROR: VPN cert missing!"; sleep 120; }
     exec sg vpn -c "openvpn --config /vpn/vpn.conf"
 fi
