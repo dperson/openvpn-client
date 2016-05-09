@@ -35,7 +35,8 @@ dns() { local conf="/vpn/vpn.conf"
 #   none)
 # Return: configured firewall
 firewall() {
-    local docker_network=$(ip -o addr show dev eth0 | awk '$3=="inet"{print $4}')
+    local docker_network=$(ip -o addr show dev eth0 |
+                awk '$3 == "inet" {print $4}')
 
     iptables -F OUTPUT
     iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
