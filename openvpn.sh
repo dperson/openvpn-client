@@ -35,12 +35,14 @@ dns() { local conf="/vpn/vpn.conf"
 #   none)
 # Return: configured firewall
 firewall() {
+    local docker_network=$(ip -o addr show dev eth0 | awk '$3=="inet"{print $4}')
+
     iptables -F OUTPUT
     iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     iptables -A OUTPUT -o lo -j ACCEPT
     iptables -A OUTPUT -o tap0 -j ACCEPT
     iptables -A OUTPUT -o tun0 -j ACCEPT
-    iptables -A OUTPUT -d 172.16.0.0/12 -j ACCEPT
+    iptables -A OUTPUT -d ${docker_network} -j ACCEPT
     iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
     iptables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT
