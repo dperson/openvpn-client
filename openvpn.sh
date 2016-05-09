@@ -169,5 +169,16 @@ elif ps -ef | egrep -v 'grep|openvpn.sh' | grep -q openvpn; then
 else
     [[ -e /vpn/vpn.conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
     [[ -e /vpn/vpn-ca.crt ]] || { echo "ERROR: VPN cert missing!"; sleep 120; }
+    [[ -x /sbin/resolvconf ]] || { cat >/sbin/resolvconf <<-EOF
+		#!/bin/sh
+		conf=/etc/resolv.conf
+		[ -e ${conf}.orig ] || cp -p ${conf} ${conf}.orig
+		if [ ${1:-""} == "-a" ]; then
+		    cat >${conf}
+		elif [ ${1:-""} == "-d" ]; then
+		    cat ${conf}.orig >${conf}
+		fi
+		EOF
+        chmod +x /sbin/resolvconf; }
     exec sg vpn -c "openvpn --config /vpn/vpn.conf"
 fi
