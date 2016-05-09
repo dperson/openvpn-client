@@ -170,13 +170,13 @@ else
     [[ -e /vpn/vpn.conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
     [[ -e /vpn/vpn-ca.crt ]] || { echo "ERROR: VPN cert missing!"; sleep 120; }
     [[ -x /sbin/resolvconf ]] || { cat >/sbin/resolvconf <<-EOF
-		#!/bin/sh
+		#!/usr/bin/env bash
 		conf=/etc/resolv.conf
-		[ -e ${conf}.orig ] || cp -p ${conf} ${conf}.orig
-		if [ ${1:-""} == "-a" ]; then
-		    cat >${conf}
-		elif [ ${1:-""} == "-d" ]; then
-		    cat ${conf}.orig >${conf}
+		[[ -e \${conf}.orig ]] || cp -p \${conf} \${conf}.orig
+		if [[ "\${1:-""}" == "-a" ]]; then
+		    cat >\${conf}
+		elif [[ "\${1:-""}" == "-d" ]]; then
+		    cat \${conf}.orig >\${conf}
 		fi
 		EOF
         chmod +x /sbin/resolvconf; }
