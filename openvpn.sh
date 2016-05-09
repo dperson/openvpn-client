@@ -28,6 +28,11 @@ dns() { local conf="/vpn/vpn.conf"
     echo "script-security 2" >>$conf
     echo "up /etc/openvpn/update-resolv-conf" >>$conf
     echo "down /etc/openvpn/update-resolv-conf" >>$conf
+
+    dns() {
+        # no-op further calls
+        true
+    }
 }
 
 ### firewall: firewall all output not DNS/VPN that's not over the VPN
@@ -47,6 +52,11 @@ firewall() {
     iptables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT
     iptables -A OUTPUT -j DROP
+
+    firewall() {
+        # no-op further calls
+        true
+    }
 }
 
 ### return_route: add a route back to your network, so that return traffic works
@@ -56,6 +66,11 @@ firewall() {
 return_route() { local gw network="$1"
     gw=$(ip route | awk '/default/ {print $3}')
     ip route add to $network via $gw dev eth0
+
+    return_route() {
+        # no-op further calls
+        true
+    }
 }
 
 ### timezone: Set the timezone for the container
@@ -137,11 +152,19 @@ The 'command' (if provided and valid) will be run instead of openvpn
     exit $RC
 }
 
+# Convert ENV options into CLI parameters.
+# Push into front of positional params so explicit params can override.
+[[ "${FIREWALL:-""}" ]] && set -- -f          "$@"
+[[ "${ROUTE:-""}" ]]    && set -- -r "$ROUTE" "$@"
+[[ "${TZ:-""}" ]]       && set -- -t "$TZ"    "$@"
+[[ "${VPN:-""}" ]]      && set -- -v "$VPN"   "$@"
+[[ "${DNS:-""}" ]]      && set -- -d          "$@"
+
 while getopts ":hdfr:t:v:" opt; do
     case "$opt" in
         h) usage ;;
-        d) DNS=true ;;
-        f) firewall; touch /vpn/.firewall ;;
+        d) dns ;;
+        f) firewall ;;
         r) return_route "$OPTARG" ;;
         t) timezone "$OPTARG" ;;
         v) eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $OPTARG) ;;
@@ -151,11 +174,6 @@ while getopts ":hdfr:t:v:" opt; do
 done
 shift $(( OPTIND - 1 ))
 
-[[ "${FIREWALL:-""}" || -e /vpn/.firewall ]] && firewall
-[[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
-[[ "${TZ:-""}" ]] && timezone "$TZ"
-[[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)
-[[ "${DNS:-""}" ]] && dns
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
