@@ -46,8 +46,10 @@ firewall() {
     iptables -A OUTPUT -o tun0 -j ACCEPT
     iptables -A OUTPUT -d ${docker_network} -j ACCEPT
     iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
-    iptables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT
-    iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT
+    iptables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
+    iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
+        iptables -A OUTPUT -p tcp -m tcp --dport 1194 -j ACCEPT
+        iptables -A OUTPUT -p udp -m udp --dport 1194 -j ACCEPT; }
     iptables -A OUTPUT -j DROP
 }
 
