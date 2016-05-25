@@ -169,8 +169,7 @@ elif [[ $# -ge 1 ]]; then
 elif ps -ef | egrep -v 'grep|openvpn.sh' | grep -q openvpn; then
     echo "Service already running, please restart container to apply changes"
 else
-    [[ -e /vpn/vpn.conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
-    [[ -e /vpn/vpn-ca.crt ]] || { echo "ERROR: VPN cert missing!"; sleep 120; }
+    [[ -e /vpn/vpn.conf ]] || { echo "ERROR: VPN not configured!"; exit 1; }
     [[ -x /sbin/resolvconf ]] || { cat >/sbin/resolvconf <<-EOF
 		#!/usr/bin/env bash
 		conf=/etc/resolv.conf
