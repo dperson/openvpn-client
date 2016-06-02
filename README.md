@@ -28,6 +28,11 @@ below.
 **NOTE 3**: If you need access to other non HTTP proxy-able ports, please see
 the Routing  instructions below.
 
+**NOTE 4**: If you have a VPN service that allows making local services
+available, you'll need to reuse the VPN container's network stack with the
+`--net=container:vpn` (replacing 'vpn' with what you named your instance of this
+container) when you launch the service in it's container.
+
 ## Hosting an OpenVPN client instance
 
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
