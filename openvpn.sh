@@ -113,6 +113,16 @@ vpn() { local server="$1" user="$2" pass="$3" \
     chmod 0600 $auth
 }
 
+### vpnportforward: setup vpn port forwarding
+# Arguments:
+#   port) forwarded port
+# Return: configured NAT rule
+vpnportforward() {
+    local port="$1"
+    iptables -t nat -A OUTPUT -p tcp --dport $port -j DNAT --to-destination 127.0.0.11:$port
+    echo "Setup forwarded port: $port"
+}
+
 ### usage: Help
 # Arguments:
 #   none)
@@ -125,6 +135,8 @@ Options (fields in '[]' are optional, '<>' are required):
     -d          Use the VPN provider's DNS resolvers
     -f          Firewall rules so that only the VPN and DNS are allowed to
                 send internet traffic (IE if VPN is down it's offline)
+    -p \"<port>\" Forward port <port>
+                  required arg: \"<port>\"
     -r \"<network>\" CIDR network (IE 192.168.1.0/24)
                 required arg: \"<network>\"
                 <network> add a route to (allows replies once the VPN is up)
@@ -146,6 +158,7 @@ while getopts ":hdfr:t:v:" opt; do
         h) usage ;;
         d) DNS=true ;;
         f) firewall; touch /vpn/.firewall ;;
+        p) vpnportforward "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
         t) timezone "$OPTARG" ;;
         v) eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $OPTARG) ;;
@@ -160,6 +173,7 @@ shift $(( OPTIND - 1 ))
 [[ "${TZ:-""}" ]] && timezone "$TZ"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)
 [[ "${DNS:-""}" ]] && dns
+[[ "${VPNPORT:-""}" ]] && vpnportforward "$VPNPORT"
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
@@ -173,3 +187,6 @@ else
     [[ -e /vpn/vpn-ca.crt ]] || { echo "ERROR: VPN cert missing!"; sleep 120; }
     exec sg vpn -c "openvpn --config /vpn/vpn.conf"
 fi
+
+
+
