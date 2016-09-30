@@ -84,15 +84,16 @@ timezone() { local timezone="${1:-EST5EDT}"
 #   server) VPN GW server
 #   user) user name on VPN
 #   pass) password on VPN
+#   port) port to connect to VPN (optional)
 # Return: configured .ovpn file
-vpn() { local server="$1" user="$2" pass="$3" \
+vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" \
             conf="/vpn/vpn.conf" auth="/vpn/vpn.auth"
 
     cat >$conf <<-EOF
 		client
 		dev tun
 		proto udp
-		remote $server 1194
+		remote $server $port
 		resolv-retry infinite
 		nobind
 		persist-key
@@ -142,11 +143,12 @@ Options (fields in '[]' are optional, '<>' are required):
                 <network> add a route to (allows replies once the VPN is up)
     -t \"\"       Configure timezone
                 possible arg: \"[timezone]\" - zoneinfo timezone for container
-    -v '<server;user;password>' Configure OpenVPN
+    -v '<server;user;password[;port]>' Configure OpenVPN
                 required arg: \"<server>;<user>;<password>\"
                 <server> to connect to
                 <user> to authenticate as
                 <password> to authenticate with
+                optional arg: port to use, instead of default
 
 The 'command' (if provided and valid) will be run instead of openvpn
 " >&2

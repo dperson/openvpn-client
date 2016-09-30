@@ -101,11 +101,12 @@ make sure that `redirect-gateway def1` is set, otherwise routing may not work.
                     <network> add a route to (allows replies once the VPN is up)
         -t ""       Configure timezone
                     possible arg: "[timezone]" - zoneinfo timezone for container
-        -v '<server;user;password>' Configure OpenVPN
+        -v '<server;user;password[;port]>' Configure OpenVPN
                     required arg: "<server>;<user>;<password>"
                     <server> to connect to
                     <user> to authenticate as
                     <password> to authenticate with
+                    optional arg: port to use, instead of default
 
     The 'command' (if provided and valid) will be run instead of openvpn
 
