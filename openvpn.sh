@@ -95,6 +95,7 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" \
 		proto udp
 		remote $server $port
 		resolv-retry infinite
+		keepalive 10 30
 		nobind
 		persist-key
 		persist-tun
