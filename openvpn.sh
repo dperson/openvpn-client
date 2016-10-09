@@ -90,8 +90,8 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" \
             conf="/vpn/vpn.conf" auth="/vpn/vpn.auth" i
 
     echo "client" >$conf
-    echo "dev tun" >$conf
-    echo "proto udp" >$conf
+    echo "dev tun" >>$conf
+    echo "proto udp" >>$conf
     for i in $(sed 's/:/ /g' <<< $server); do
         echo "remote $i $port" >>$conf
     done
