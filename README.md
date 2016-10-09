@@ -103,7 +103,7 @@ make sure that `redirect-gateway def1` is set, otherwise routing may not work.
                     possible arg: "[timezone]" - zoneinfo timezone for container
         -v '<server;user;password[;port]>' Configure OpenVPN
                     required arg: "<server>;<user>;<password>"
-                    <server> to connect to
+                    <server> to connect to (multiple servers can be separated by :)
                     <user> to authenticate as
                     <password> to authenticate with
                     optional arg: port to use, instead of default

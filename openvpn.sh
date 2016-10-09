@@ -87,27 +87,28 @@ timezone() { local timezone="${1:-EST5EDT}"
 #   port) port to connect to VPN (optional)
 # Return: configured .ovpn file
 vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" \
-            conf="/vpn/vpn.conf" auth="/vpn/vpn.auth"
+            conf="/vpn/vpn.conf" auth="/vpn/vpn.auth" i
 
-    cat >$conf <<-EOF
-		client
-		dev tun
-		proto udp
-		remote $server $port
-		resolv-retry infinite
-		keepalive 10 30
-		nobind
-		persist-key
-		ca /vpn/vpn-ca.crt
-		tls-client
-		remote-cert-tls server
-		auth-user-pass
-		comp-lzo
-		verb 1
-		reneg-sec 0
-		redirect-gateway def1
-		auth-user-pass $auth
-		EOF
+    echo "client" >$conf
+    echo "dev tun" >$conf
+    echo "proto udp" >$conf
+    for i in $(sed 's/:/ /g' <<< $server); do
+        echo "remote $i $port" >>$conf
+    done
+    [[ $server =~ : ]] && echo "remote-random" >>$conf
+    echo "resolv-retry infinite" >>$conf
+    echo "keepalive 10 30" >>$conf
+    echo "nobind" >>$conf
+    echo "persist-key" >>$conf
+    echo "ca /vpn/vpn-ca.crt" >>$conf
+    echo "tls-client" >>$conf
+    echo "remote-cert-tls server" >>$conf
+    echo "auth-user-pass" >>$conf
+    echo "comp-lzo" >>$conf
+    echo "verb 1" >>$conf
+    echo "reneg-sec 0" >>$conf
+    echo "redirect-gateway def1" >>$conf
+    echo "auth-user-pass $auth" >>$conf
 
     echo "$user" >$auth
     echo "$pass" >>$auth
@@ -145,7 +146,7 @@ Options (fields in '[]' are optional, '<>' are required):
                 possible arg: \"[timezone]\" - zoneinfo timezone for container
     -v '<server;user;password[;port]>' Configure OpenVPN
                 required arg: \"<server>;<user>;<password>\"
-                <server> to connect to
+                <server> to connect to (multiple servers can be separated by :)
                 <user> to authenticate as
                 <password> to authenticate with
                 optional arg: port to use, instead of default
