@@ -103,7 +103,6 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" \
     echo "ca /vpn/vpn-ca.crt" >>$conf
     echo "tls-client" >>$conf
     echo "remote-cert-tls server" >>$conf
-    echo "auth-user-pass" >>$conf
     echo "comp-lzo" >>$conf
     echo "verb 1" >>$conf
     echo "reneg-sec 0" >>$conf
