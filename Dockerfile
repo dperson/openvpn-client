@@ -4,7 +4,7 @@ MAINTAINER David Personette <dperson@gmail.com>
 # Install openvpn
 RUN export DEBIAN_FRONTEND='noninteractive' && \
     apt-get update -qq && \
-    apt-get install -qqy --no-install-recommends iptables openvpn \
+    apt-get install -qqy --no-install-recommends iptables openvpn psutils \
                 $(apt-get -s dist-upgrade|awk '/^Inst.*ecurity/ {print $2}') &&\
     echo '#!/usr/bin/env bash' >/sbin/resolvconf && \
     echo 'conf=/etc/resolv.conf' >>/sbin/resolvconf && \
