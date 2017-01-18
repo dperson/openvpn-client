@@ -186,7 +186,8 @@ elif ps -ef | egrep -v 'grep|openvpn.sh' | grep -q openvpn; then
     echo "Service already running, please restart container to apply changes"
 else
     mkdir -p /dev/net
-    [[ -c /dev/net/tun ]] || mknod /dev/net/tun c 10 200
+    [[ -c /dev/net/tun ]] || { mknod /dev/net/tun c 10 200
+        chmod 0666 /dev/net/tun; }
     [[ -e /vpn/vpn.conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
     [[ -e /vpn/vpn-ca.crt ]] || grep -q '<cert>' /vpn/vpn.conf ||
         { echo "ERROR: VPN cert missing!"; sleep 120; }
