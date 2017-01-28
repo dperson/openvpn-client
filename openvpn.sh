@@ -188,7 +188,7 @@ else
     mkdir -p /dev/net
     [[ -c /dev/net/tun ]] || mknod -m 0666 /dev/net/tun c 10 200
     [[ -e /vpn/vpn.conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
-    [[ -e /vpn/vpn-ca.crt ]] || grep -q '<cert>' /vpn/vpn.conf ||
-        { echo "ERROR: VPN cert missing!"; sleep 120; }
+    [[ -e /vpn/vpn-ca.crt ]] || grep -q '<ca>' /vpn/vpn.conf ||
+        { echo "ERROR: VPN CA cert missing!"; sleep 120; }
     exec sg vpn -c "openvpn --config /vpn/vpn.conf"
 fi
