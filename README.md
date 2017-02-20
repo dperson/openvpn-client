@@ -26,12 +26,15 @@ mode.
 below.
 
 **NOTE 3**: If you need access to other non HTTP proxy-able ports, please see
-the Routing  instructions below.
+the Routing instructions below.
 
 **NOTE 4**: If you have a VPN service that allows making local services
 available, you'll need to reuse the VPN container's network stack with the
 `--net=container:vpn` (replacing 'vpn' with what you named your instance of this
 container) when you launch the service in it's container.
+
+**NOTE 5**: If yoy need instructions for the usage along docker-compose, please
+see the docker-compose example below.
 
 ## Hosting an OpenVPN client instance
 
@@ -185,6 +188,41 @@ get from your VPN. You'll need to add the `--dns` command line option to the
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 --dns 8.8.4.4 -v /some/path:/vpn -d dperson/openvpn-client \
                 -v 'vpn.server.name;username;password'
+
+## docker-compose example (using openvpn .ovpn unified file)
+
+If you are using docker-compose in a multi-container enviroment you can configure
+your vpn container in the docker-compose.yml file like this:
+
+    my-vpn:
+      image: dperson/openvpn-client
+      container_name: my-vpn
+      volumes:
+        - ./my/project/path/entrypoint.bash:/entrypoint.bash
+        - ./my/project/path/client.ovpn:/client.ovpn
+      devices:
+        - /dev/net/tun:/dev/net/tun
+      cap_add:
+        - NET_ADMIN
+      entrypoint: bash entrypoint.bash
+
+To launch openvpn at docker-compose start create the entrypoint.bash file 
+referenced above with the following content:
+
+    #!/bin/bash
+    
+    # Run openvpn server
+    openvpn client.ovpn
+    
+    # Execute original entrypoint
+    bash /usr/bin/openvpn.sh
+       
+If you need to route any other container through the vpn container you can do
+it like this:
+
+    my-dummy-container:
+      (...)
+      net: container:my-vpn
 
 # User Feedback
 
