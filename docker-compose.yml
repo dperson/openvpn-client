@@ -1,0 +1,61 @@
+version: '2.1'
+
+services:
+  service1:
+    image: docker_hub_user/container_name
+    depends_on:
+      - vpn
+    environment:
+      TZ: 'EST5EDT'
+    network_mode: "service:vpn"
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    volumes:
+      - /srv/service1:/var/lib/service1:Z
+
+  vpn:
+    image: dperson/openvpn-client
+    cap_add:
+      - net_admin
+  #  dns:
+  #    - 8.8.4.4
+  #    - 8.8.8.8
+    environment:
+      TZ: 'EST5EDT'
+    networks:
+      - bridge
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+    security_opt:
+      - label:disable
+    stdin_open: true
+    tty: true
+    volumes:
+      - /dev/net:/dev/net:z
+
+  web:
+    image: dperson/nginx
+    depends_on:
+      - service1
+    environment:
+      TZ: 'EST5EDT'
+    links:
+      - vpn:service1
+    ports:
+      - "80:80"
+      - "443:443"
+    read_only: true
+    tmpfs:
+      - /run
+      - /tmp
+      - /var/cache/nginx
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    command: -w "http://service1:8888;/service1"

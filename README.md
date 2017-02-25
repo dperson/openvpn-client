@@ -26,12 +26,16 @@ mode.
 below.
 
 **NOTE 3**: If you need access to other non HTTP proxy-able ports, please see
-the Routing  instructions below.
+the Routing instructions below.
 
 **NOTE 4**: If you have a VPN service that allows making local services
 available, you'll need to reuse the VPN container's network stack with the
 `--net=container:vpn` (replacing 'vpn' with what you named your instance of this
 container) when you launch the service in it's container.
+
+**NOTE 5**: If you need a template for using this container with
+`docker-compose`, see the example
+[file](https://github.com/dperson/openvpn-client/raw/master/docker-compose.yml).
 
 ## Hosting an OpenVPN client instance
 
