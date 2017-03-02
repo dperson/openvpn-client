@@ -97,10 +97,15 @@ make sure that `redirect-gateway def1` is set, otherwise routing may not work.
     Usage: openvpn.sh [-opt] [command]
     Options (fields in '[]' are optional, '<>' are required):
         -h          This help
+        -c '<passwd>' Configure an authentication password to open the cert
+                    required arg: "<passwd>"
+                    <passwd> password to access the certificate file
         -d          Use the VPN provider's DNS resolvers
         -f          Firewall rules so that only the VPN and DNS are allowed to
                     send internet traffic (IE if VPN is down it's offline)
-        -r "<network>" CIDR network (IE 192.168.1.0/24)
+        -p '<port>' Forward port <port>
+                        required arg: \"<port>\"
+        -r '<network>' CIDR network (IE 192.168.1.0/24)
                     required arg: "<network>"
                     <network> add a route to (allows replies once the VPN is up)
         -t ""       Configure timezone
@@ -116,10 +121,13 @@ make sure that `redirect-gateway def1` is set, otherwise routing may not work.
 
 ENVIRONMENT VARIABLES (only available with `docker run`)
 
+ * `CERT_AUTH` - As above, provide authentication to access certificate
  * `DNS` - As above, Use the VPN provider's DNS resolvers
+ * `FIREWALL` - As above, setup firewall to disallow net access w/o the VPN
  * `ROUTE` - As above, add a route to allow replies to your private network
  * `TZ` - As above, set a zoneinfo timezone, IE `EST5EDT`
  * `VPN` - As above, setup a VPN connection
+ * `VPNPORT` - As above, setup port forwarding
 
 ## Examples
 

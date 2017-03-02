@@ -18,6 +18,21 @@
 
 set -o nounset                              # Treat unset variables as an error
 
+### cert_auth: setup auth passwd for accessing certificate
+# Arguments:
+#   passwd) Password to access the cert
+# Return: conf file that uses VPN provider's DNS resolvers
+cert_auth() { local passwd="$1" auth="/vpn/vpn.cert_auth" conf="/vpn/vpn.conf"
+    grep -q "^${passwd}\$" $auth || {
+        echo "$passwd" >$auth
+    }
+    chmod 0600 $auth
+    grep -q "^askpass ${auth}\$" $conf || {
+        sed -i '/askpass/d' $conf
+        echo "askpass $auth" >>$conf
+    }
+}
+
 ### dns: setup openvpn client DNS
 # Arguments:
 #   none)
@@ -120,7 +135,8 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" \
 # Return: configured NAT rule
 vpnportforward() {
     local port="$1"
-    iptables -t nat -A OUTPUT -p tcp --dport $port -j DNAT --to-destination 127.0.0.11:$port
+    iptables -t nat -A OUTPUT -p tcp --dport $port -j DNAT \
+                --to-destination 127.0.0.11:$port
     echo "Setup forwarded port: $port"
 }
 
@@ -133,12 +149,15 @@ usage() { local RC=${1:-0}
     echo "Usage: ${0##*/} [-opt] [command]
 Options (fields in '[]' are optional, '<>' are required):
     -h          This help
+    -c '<passwd>' Configure an authentication password to open the cert
+                required arg: \"<passwd>\"
+                <passwd> password to access the certificate file
     -d          Use the VPN provider's DNS resolvers
     -f          Firewall rules so that only the VPN and DNS are allowed to
                 send internet traffic (IE if VPN is down it's offline)
-    -p \"<port>\" Forward port <port>
+    -p '<port>' Forward port <port>
                   required arg: \"<port>\"
-    -r \"<network>\" CIDR network (IE 192.168.1.0/24)
+    -r '<network>' CIDR network (IE 192.168.1.0/24)
                 required arg: \"<network>\"
                 <network> add a route to (allows replies once the VPN is up)
     -t \"\"       Configure timezone
@@ -155,9 +174,10 @@ The 'command' (if provided and valid) will be run instead of openvpn
     exit $RC
 }
 
-while getopts ":hdfp:r:t:v:" opt; do
+while getopts ":hc:dfp:r:t:v:" opt; do
     case "$opt" in
         h) usage ;;
+        c) cert_auth "$OPTARG" ;;
         d) DNS=true ;;
         f) firewall; touch /vpn/.firewall ;;
         p) vpnportforward "$OPTARG" ;;
@@ -170,6 +190,7 @@ while getopts ":hdfp:r:t:v:" opt; do
 done
 shift $(( OPTIND - 1 ))
 
+[[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
 [[ "${FIREWALL:-""}" || -e /vpn/.firewall ]] && firewall
 [[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
 [[ "${TZ:-""}" ]] && timezone "$TZ"
