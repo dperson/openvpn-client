@@ -26,8 +26,6 @@ services:
   #    - 8.8.8.8
     environment:
       TZ: 'EST5EDT'
-    networks:
-      - bridge
     read_only: true
     tmpfs:
       - /tmp
