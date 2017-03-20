@@ -51,10 +51,11 @@ dns() { local conf="/vpn/vpn.conf"
 #   none)
 # Return: configured firewall
 firewall() {
-    local docker_network=$(ip -o addr show dev eth0 |
-                awk '$3 == "inet" {print $4}')
+    local network docker_network=$(ip -o addr show dev eth0 |
+                awk '$3 == "inet" {print $4}') file=/vpn/.firewall
 
     iptables -F OUTPUT
+    iptables -P OUTPUT DROP
     iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     iptables -A OUTPUT -o lo -j ACCEPT
     iptables -A OUTPUT -o tap0 -j ACCEPT
@@ -65,16 +66,19 @@ firewall() {
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
         iptables -A OUTPUT -p tcp -m tcp --dport 1194 -j ACCEPT
         iptables -A OUTPUT -p udp -m udp --dport 1194 -j ACCEPT; }
-    iptables -A OUTPUT -j DROP
+    for network in $(cat $file); do return_route $network; done
 }
 
 ### return_route: add a route back to your network, so that return traffic works
 # Arguments:
 #   network) a CIDR specified network range
 # Return: configured return route
-return_route() { local gw network="$1"
+return_route() { local gw network="$1" file=/vpn/.firewall
     gw=$(ip route | awk '/default/ {print $3}')
-    ip route add to $network via $gw dev eth0
+    ip route | grep -q "$network" ||
+        ip route add to $network via $gw dev eth0
+    iptables -A OUTPUT --destination $network -j ACCEPT
+    grep -q "^$network\$" $file || echo "$network" >>$file
 }
 
 ### timezone: Set the timezone for the container
