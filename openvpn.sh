@@ -66,7 +66,7 @@ firewall() {
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
         iptables -A OUTPUT -p tcp -m tcp --dport 1194 -j ACCEPT
         iptables -A OUTPUT -p udp -m udp --dport 1194 -j ACCEPT; }
-    for network in $(cat $file); do return_route $network; done
+    [[ -s $file ]] && for network in $(cat $file); do return_route $network;done
 }
 
 ### return_route: add a route back to your network, so that return traffic works
@@ -77,8 +77,8 @@ return_route() { local gw network="$1" file=/vpn/.firewall
     gw=$(ip route | awk '/default/ {print $3}')
     ip route | grep -q "$network" ||
         ip route add to $network via $gw dev eth0
-    iptables -A OUTPUT --destination $network -j ACCEPT
-    grep -q "^$network\$" $file || echo "$network" >>$file
+    [[ -e $file ]] && iptables -A OUTPUT --destination $network -j ACCEPT
+    [[ -e $file ]] && grep -q "^$network\$" $file || echo "$network" >>$file
 }
 
 ### timezone: Set the timezone for the container
