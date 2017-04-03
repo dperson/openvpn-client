@@ -18,11 +18,21 @@
 
 set -o nounset                              # Treat unset variables as an error
 
+dir="/vpn"
+auth="$dir/vpn.cert_auth"
+conf="$dir/vpn.conf"
+cert="$dir/vpn-ca.crt"
+file="$dir/.firewall"
+[[ -f $conf ]] || { [[ $(echo $dir/*.{conf,ovpn} | wc -w) -eq 1 ]] &&
+            conf=echo $dir/*.{conf,ovpn}; }
+[[ -f $cert ]] || { [[ $(echo $dir/*.cert | wc -w) -eq 1 ]] &&
+            cert=echo $dir/*.cert; }
+
 ### cert_auth: setup auth passwd for accessing certificate
 # Arguments:
 #   passwd) Password to access the cert
 # Return: conf file that uses VPN provider's DNS resolvers
-cert_auth() { local passwd="$1" auth="/vpn/vpn.cert_auth" conf="/vpn/vpn.conf"
+cert_auth() { local passwd="$1"
     grep -q "^${passwd}\$" $auth || {
         echo "$passwd" >$auth
     }
@@ -37,8 +47,7 @@ cert_auth() { local passwd="$1" auth="/vpn/vpn.cert_auth" conf="/vpn/vpn.conf"
 # Arguments:
 #   none)
 # Return: conf file that uses VPN provider's DNS resolvers
-dns() { local conf="/vpn/vpn.conf"
-
+dns() {
     sed -i '/resolv-*conf/d; /script-security/d' $conf
     echo "# This updates the resolvconf with dns settings" >>$conf
     echo "script-security 2" >>$conf
@@ -46,13 +55,12 @@ dns() { local conf="/vpn/vpn.conf"
     echo "down /etc/openvpn/update-resolv-conf" >>$conf
 }
 
-### firewall: firewall all output not DNS/VPN that's not over the VPN
+### firewall: firewall all output not DNS/VPN that's not over the VPN connection
 # Arguments:
 #   none)
 # Return: configured firewall
-firewall() {
-    local network docker_network=$(ip -o addr show dev eth0 |
-                awk '$3 == "inet" {print $4}') file=/vpn/.firewall
+firewall() { local network docker_network=$(ip -o addr show dev eth0 |
+                awk '$3 == "inet" {print $4}')
 
     iptables -F OUTPUT
     iptables -P OUTPUT DROP
@@ -73,7 +81,7 @@ firewall() {
 # Arguments:
 #   network) a CIDR specified network range
 # Return: configured return route
-return_route() { local gw network="$1" file=/vpn/.firewall
+return_route() { local gw network="$1"
     gw=$(ip route | awk '/default/ {print $3}')
     ip route | grep -q "$network" ||
         ip route add to $network via $gw dev eth0
@@ -105,9 +113,7 @@ timezone() { local timezone="${1:-EST5EDT}"
 #   pass) password on VPN
 #   port) port to connect to VPN (optional)
 # Return: configured .ovpn file
-vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" \
-            conf="/vpn/vpn.conf" auth="/vpn/vpn.auth" i
-
+vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i
     echo "client" >$conf
     echo "dev tun" >>$conf
     echo "proto udp" >>$conf
@@ -119,7 +125,7 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" \
     echo "keepalive 10 30" >>$conf
     echo "nobind" >>$conf
     echo "persist-key" >>$conf
-    echo "ca /vpn/vpn-ca.crt" >>$conf
+    echo "ca $cert" >>$conf
     echo "tls-client" >>$conf
     echo "remote-cert-tls server" >>$conf
     echo "comp-lzo" >>$conf
@@ -149,7 +155,6 @@ vpnportforward() {
 #   none)
 # Return: Help text
 usage() { local RC=${1:-0}
-
     echo "Usage: ${0##*/} [-opt] [command]
 Options (fields in '[]' are optional, '<>' are required):
     -h          This help
@@ -183,7 +188,7 @@ while getopts ":hc:dfp:r:t:v:" opt; do
         h) usage ;;
         c) cert_auth "$OPTARG" ;;
         d) DNS=true ;;
-        f) firewall; touch /vpn/.firewall ;;
+        f) firewall; touch $file ;;
         p) vpnportforward "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
         t) timezone "$OPTARG" ;;
@@ -195,7 +200,7 @@ done
 shift $(( OPTIND - 1 ))
 
 [[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
-[[ "${FIREWALL:-""}" || -e /vpn/.firewall ]] && firewall
+[[ "${FIREWALL:-""}" || -e $file ]] && firewall
 [[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
 [[ "${TZ:-""}" ]] && timezone "$TZ"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)
@@ -212,8 +217,8 @@ elif ps -ef | egrep -v 'grep|openvpn.sh' | grep -q openvpn; then
 else
     mkdir -p /dev/net
     [[ -c /dev/net/tun ]] || mknod -m 0666 /dev/net/tun c 10 200
-    [[ -e /vpn/vpn.conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
-    [[ -e /vpn/vpn-ca.crt ]] || grep -q '<ca>' /vpn/vpn.conf ||
+    [[ -e $conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
+    [[ -e $cert ]] || grep -q '<ca>' $conf ||
         { echo "ERROR: VPN CA cert missing!"; sleep 120; }
-    exec sg vpn -c "openvpn --config /vpn/vpn.conf"
+    exec sg vpn -c "openvpn --config $conf"
 fi
