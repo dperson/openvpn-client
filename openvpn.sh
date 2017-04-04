@@ -23,10 +23,10 @@ auth="$dir/vpn.cert_auth"
 conf="$dir/vpn.conf"
 cert="$dir/vpn-ca.crt"
 file="$dir/.firewall"
-[[ -f $conf ]] || { [[ $(echo $dir/*.{conf,ovpn} | wc -w) -eq 1 ]] &&
-            conf=echo $dir/*.{conf,ovpn}; }
-[[ -f $cert ]] || { [[ $(echo $dir/*.cert | wc -w) -eq 1 ]] &&
-            cert=echo $dir/*.cert; }
+[[ -f $conf ]] || { [[ $(ls $dir/. | egrep '\.(conf|ovpn)$' | wc -w ) -eq 1 ]] &&
+            conf="$dir/$(ls $dir/. | egrep '\.(conf|ovpn)$')"; }
+[[ -f $cert ]] || { [[ $(ls $dir/. | egrep '\.ce?rt$' | wc -w) -eq 1 ]] &&
+            cert="$dir/$(ls $dir/. | egrep '\.ce?rt$')"; }
 
 ### cert_auth: setup auth passwd for accessing certificate
 # Arguments:
