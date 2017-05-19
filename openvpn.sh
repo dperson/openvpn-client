@@ -113,7 +113,9 @@ timezone() { local timezone="${1:-EST5EDT}"
 #   pass) password on VPN
 #   port) port to connect to VPN (optional)
 # Return: configured .ovpn file
-vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i
+vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i pem
+    pem=$(\ls $dir/*.pem)
+
     echo "client" >$conf
     echo "dev tun" >>$conf
     echo "proto udp" >>$conf
@@ -126,13 +128,14 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i
     echo "nobind" >>$conf
     echo "persist-key" >>$conf
     echo "ca $cert" >>$conf
+    [[ $(wc -w <<< $pem) -eq 1 ]] && echo "crl-verify $pem" >>$conf
     echo "tls-client" >>$conf
     echo "remote-cert-tls server" >>$conf
+    echo "auth-user-pass $auth" >>$conf
     echo "comp-lzo" >>$conf
     echo "verb 1" >>$conf
     echo "reneg-sec 0" >>$conf
     echo "redirect-gateway def1" >>$conf
-    echo "auth-user-pass $auth" >>$conf
 
     echo "$user" >$auth
     echo "$pass" >>$auth
