@@ -59,8 +59,11 @@ dns() {
 # Arguments:
 #   none)
 # Return: configured firewall
-firewall() { local network docker_network=$(ip -o addr show dev eth0 |
-                awk '$3 == "inet" {print $4}')
+firewall() { local port=${1:-1194} docker_network=$(ip -o addr show dev eth0 |
+                awk '$3 == "inet" {print $4}') network
+    [[ -z "${1:-""}" && -r $conf ]] &&
+        port=$(awk '/^remote / && NF ~ /^[0-9]*$/ {print $NF}' $cert |
+                    grep ^ || echo 1194)
 
     iptables -F OUTPUT
     iptables -P OUTPUT DROP
@@ -72,8 +75,8 @@ firewall() { local network docker_network=$(ip -o addr show dev eth0 |
     iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
     iptables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
-        iptables -A OUTPUT -p tcp -m tcp --dport 1194 -j ACCEPT
-        iptables -A OUTPUT -p udp -m udp --dport 1194 -j ACCEPT; }
+        iptables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT
+        iptables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT; }
     [[ -s $file ]] && for network in $(cat $file); do return_route $network;done
 }
 
@@ -127,19 +130,21 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i pem
     echo "keepalive 10 30" >>$conf
     echo "nobind" >>$conf
     echo "persist-key" >>$conf
-    echo "ca $cert" >>$conf
-    [[ $(wc -w <<< $pem) -eq 1 ]] && echo "crl-verify $pem" >>$conf
     echo "tls-client" >>$conf
     echo "remote-cert-tls server" >>$conf
     echo "auth-user-pass $auth" >>$conf
     echo "comp-lzo" >>$conf
     echo "verb 1" >>$conf
     echo "reneg-sec 0" >>$conf
+    echo "ca $cert" >>$conf
+    [[ $(wc -w <<< $pem) -eq 1 ]] && echo "crl-verify $pem" >>$conf
     echo "redirect-gateway def1" >>$conf
 
     echo "$user" >$auth
     echo "$pass" >>$auth
     chmod 0600 $auth
+
+    [[ "$4" ]] && firewall $port
 }
 
 ### vpnportforward: setup vpn port forwarding
