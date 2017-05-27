@@ -90,6 +90,10 @@ Running the following on your docker host should give you the correct network:
 **NOTE**: if you don't use the `-v` to configure your VPN, then you'll have to
 make sure that `redirect-gateway def1` is set, otherwise routing may not work.
 
+**NOTE 2**: if you have a port you want to make available, you have to add the
+docker `-p` option to the VPN container. The network stack will be reused by
+the second container (that's what `--net=container:vpn` does).
+
 ## Configuration
 
     sudo docker run -it --rm dperson/openvpn-client -h
@@ -162,11 +166,10 @@ Will get you the same settings as:
 In order to work you must provide VPN configuration and the certificate. You can
 use external storage for `/vpn`:
 
+    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 -v /some/path:/vpn -d dperson/openvpn-client \
                 -v 'vpn.server.name;username;password'
-    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
-    sudo docker restart vpn
 
 Or you can store it in the container:
 
@@ -181,11 +184,10 @@ Or you can store it in the container:
 It's just a simple command line argument (`-f`) to turn on the firewall, and
 block all outbound traffic if the VPN is down.
 
+    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 -v /some/path:/vpn -d dperson/openvpn-client -f \
                 -v 'vpn.server.name;username;password'
-    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
-    sudo docker restart vpn
 
 ### DNS Issues (May Look Like You Can't Connect To Anything)
 
