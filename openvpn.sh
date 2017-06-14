@@ -191,7 +191,7 @@ The 'command' (if provided and valid) will be run instead of openvpn
     exit $RC
 }
 
-while getopts ":hc:dfp:r:t:v:" opt; do
+while getopts ":hc:df:p:r:t:v:" opt; do
     case "$opt" in
         h) usage ;;
         c) cert_auth "$OPTARG" ;;
