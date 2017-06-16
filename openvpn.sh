@@ -209,7 +209,7 @@ done
 shift $(( OPTIND - 1 ))
 
 [[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
-[[ "${FIREWALL:-""}" || -e $file ]] && firewall "$FIREWALL"
+[[ "${FIREWALL:-""}" || -e $file ]] && firewall "${FIREWALL:-""}"
 [[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
 [[ "${TZ:-""}" ]] && timezone "$TZ"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)
