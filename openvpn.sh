@@ -60,7 +60,7 @@ dns() {
 #   none)
 # Return: configured firewall
 firewall() { local port=${1:-1194} docker_network=$(ip -o addr show dev eth0 |
-                awk '$3 == "inet" {print $4}') network
+            awk '$3 == "inet" {print $4}') network
     [[ -z "${1:-""}" && -r $conf ]] &&
         port=$(awk '/^remote / && NF ~ /^[0-9]*$/ {print $NF}' $cert |
                     grep ^ || echo 1194)
@@ -84,8 +84,7 @@ firewall() { local port=${1:-1194} docker_network=$(ip -o addr show dev eth0 |
 # Arguments:
 #   network) a CIDR specified network range
 # Return: configured return route
-return_route() { local gw network="$1"
-    gw=$(ip route | awk '/default/ {print $3}')
+return_route() { local network="$1" gw=$(ip route | awk '/default/ {print $3}')
     ip route | grep -q "$network" ||
         ip route add to $network via $gw dev eth0
     [[ -e $file ]] && iptables -A OUTPUT --destination $network -j ACCEPT
@@ -116,8 +115,8 @@ timezone() { local timezone="${1:-EST5EDT}"
 #   pass) password on VPN
 #   port) port to connect to VPN (optional)
 # Return: configured .ovpn file
-vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i pem
-    pem=$(\ls $dir/*.pem)
+vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
+            pem=$(\ls $dir/*.pem)
 
     echo "client" >$conf
     echo "dev tun" >>$conf
@@ -130,6 +129,8 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i pem
     echo "keepalive 10 30" >>$conf
     echo "nobind" >>$conf
     echo "persist-key" >>$conf
+    echo "cipher aes-256-cbc" >>$conf
+    echo "auth sha256" >>$conf
     echo "tls-client" >>$conf
     echo "remote-cert-tls server" >>$conf
     echo "auth-user-pass $auth" >>$conf
@@ -151,8 +152,7 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i pem
 # Arguments:
 #   port) forwarded port
 # Return: configured NAT rule
-vpnportforward() {
-    local port="$1"
+vpnportforward() { local port="$1"
     iptables -t nat -A OUTPUT -p tcp --dport $port -j DNAT \
                 --to-destination 127.0.0.11:$port
     echo "Setup forwarded port: $port"
@@ -167,36 +167,37 @@ usage() { local RC=${1:-0}
 Options (fields in '[]' are optional, '<>' are required):
     -h          This help
     -c '<passwd>' Configure an authentication password to open the cert
-                required arg: \"<passwd>\"
+                required arg: '<passwd>'
                 <passwd> password to access the certificate file
     -d          Use the VPN provider's DNS resolvers
-    -f          Firewall rules so that only the VPN and DNS are allowed to
+    -f '[port]' Firewall rules so that only the VPN and DNS are allowed to
                 send internet traffic (IE if VPN is down it's offline)
+                optional arg: [port] to use, instead of default
     -p '<port>' Forward port <port>
-                  required arg: \"<port>\"
+                  required arg: '<port>'
     -r '<network>' CIDR network (IE 192.168.1.0/24)
-                required arg: \"<network>\"
+                required arg: '<network>'
                 <network> add a route to (allows replies once the VPN is up)
-    -t \"\"       Configure timezone
-                possible arg: \"[timezone]\" - zoneinfo timezone for container
+    -t ''       Configure timezone
+                optionalarg: '[timezone]' - zoneinfo timezone for container
     -v '<server;user;password[;port]>' Configure OpenVPN
-                required arg: \"<server>;<user>;<password>\"
-                <server> to connect to (multiple servers can be separated by :)
+                required arg: '<server>;<user>;<password>'
+                <server> to connect to (multiple servers are separated by :)
                 <user> to authenticate as
                 <password> to authenticate with
-                optional arg: port to use, instead of default
+                optional arg: [port] to use, instead of default
 
 The 'command' (if provided and valid) will be run instead of openvpn
 " >&2
     exit $RC
 }
 
-while getopts ":hc:dfp:r:t:v:" opt; do
+while getopts ":hc:df:p:r:t:v:" opt; do
     case "$opt" in
         h) usage ;;
         c) cert_auth "$OPTARG" ;;
         d) DNS=true ;;
-        f) firewall; touch $file ;;
+        f) firewall "$OPTARG"; touch $file ;;
         p) vpnportforward "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
         t) timezone "$OPTARG" ;;
@@ -208,7 +209,7 @@ done
 shift $(( OPTIND - 1 ))
 
 [[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
-[[ "${FIREWALL:-""}" || -e $file ]] && firewall
+[[ "${FIREWALL:-""}" || -e $file ]] && firewall "$FIREWALL"
 [[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
 [[ "${TZ:-""}" ]] && timezone "$TZ"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)

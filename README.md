@@ -102,24 +102,25 @@ the second container (that's what `--net=container:vpn` does).
     Options (fields in '[]' are optional, '<>' are required):
         -h          This help
         -c '<passwd>' Configure an authentication password to open the cert
-                    required arg: "<passwd>"
+                    required arg: '<passwd>'
                     <passwd> password to access the certificate file
         -d          Use the VPN provider's DNS resolvers
-        -f          Firewall rules so that only the VPN and DNS are allowed to
+        -f '[port]' Firewall rules so that only the VPN and DNS are allowed to
                     send internet traffic (IE if VPN is down it's offline)
+                    optional arg: [port] to use, instead of default
         -p '<port>' Forward port <port>
-                        required arg: \"<port>\"
+                    required arg: '<port>'
         -r '<network>' CIDR network (IE 192.168.1.0/24)
-                    required arg: "<network>"
+                    required arg: '<network>'
                     <network> add a route to (allows replies once the VPN is up)
-        -t ""       Configure timezone
-                    possible arg: "[timezone]" - zoneinfo timezone for container
+        -t ''       Configure timezone
+                    optionalarg: '[timezone]' - zoneinfo timezone for container
         -v '<server;user;password[;port]>' Configure OpenVPN
-                    required arg: "<server>;<user>;<password>"
-                    <server> to connect to (multiple servers can be separated by :)
+                    required arg: '<server>;<user>;<password>'
+                    <server> to connect to (multiple servers are separated by :)
                     <user> to authenticate as
                     <password> to authenticate with
-                    optional arg: port to use, instead of default
+                    optional arg: [port] to use, instead of default
 
     The 'command' (if provided and valid) will be run instead of openvpn
 
