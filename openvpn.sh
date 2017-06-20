@@ -145,7 +145,7 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
     echo "$pass" >>$auth
     chmod 0600 $auth
 
-    [[ "${4:-""}" ]] && firewall $port
+    [[ "${FIREWALL:-""}" || -e $file ]] && [[ "${4:-""}" ]] && firewall $port
 }
 
 ### vpnportforward: setup vpn port forwarding
