@@ -129,8 +129,8 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
     echo "keepalive 10 30" >>$conf
     echo "nobind" >>$conf
     echo "persist-key" >>$conf
-    echo "cipher aes-256-cbc" >>$conf
-    echo "auth sha256" >>$conf
+    [[ "$CIPHER" ]] && echo "cipher $CIPHER" >>$conf
+    [[ "$AUTH" ]] && echo "auth $AUTH" >>$conf
     echo "tls-client" >>$conf
     echo "remote-cert-tls server" >>$conf
     echo "auth-user-pass $auth" >>$conf
