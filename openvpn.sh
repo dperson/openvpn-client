@@ -62,7 +62,7 @@ dns() {
 firewall() { local port=${1:-1194} docker_network=$(ip -o addr show dev eth0 |
             awk '$3 == "inet" {print $4}') network
     [[ -z "${1:-""}" && -r $conf ]] &&
-        port=$(awk '/^remote / && NF ~ /^[0-9]*$/ {print $NF}' $cert |
+        port=$(awk '/^remote / && NF ~ /^[0-9]*$/ {print $NF}' $conf |
                     grep ^ || echo 1194)
 
     iptables -F OUTPUT
@@ -116,7 +116,7 @@ timezone() { local timezone="${1:-EST5EDT}"
 #   port) port to connect to VPN (optional)
 # Return: configured .ovpn file
 vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
-            pem=$(\ls $dir/*.pem)
+            pem=$(\ls $dir/*.pem 2>&-)
 
     echo "client" >$conf
     echo "dev tun" >>$conf
@@ -129,8 +129,8 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
     echo "keepalive 10 30" >>$conf
     echo "nobind" >>$conf
     echo "persist-key" >>$conf
-    [[ "$CIPHER" ]] && echo "cipher $CIPHER" >>$conf
-    [[ "$AUTH" ]] && echo "auth $AUTH" >>$conf
+    [[ "${CIPHER:-""}" ]] && echo "cipher $CIPHER" >>$conf
+    [[ "${AUTH:-""}" ]] && echo "auth $AUTH" >>$conf
     echo "tls-client" >>$conf
     echo "remote-cert-tls server" >>$conf
     echo "auth-user-pass $auth" >>$conf
