@@ -182,12 +182,12 @@ Or you can store it in the container:
 
 ### Firewall
 
-It's just a simple command line argument (`-f`) to turn on the firewall, and
+It's just a simple command line argument (`-f ""`) to turn on the firewall, and
 block all outbound traffic if the VPN is down.
 
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
-                -v /some/path:/vpn -d dperson/openvpn-client -f \
+                -v /some/path:/vpn -d dperson/openvpn-client -f "" \
                 -v 'vpn.server.name;username;password'
 
 ### DNS Issues (May Look Like You Can't Connect To Anything)
