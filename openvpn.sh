@@ -25,8 +25,8 @@ cert="$dir/vpn-ca.crt"
 file="$dir/.firewall"
 [[ -f $conf ]] || { [[ $(ls $dir/*.{conf,ovpn} 2>&- | wc -w) -eq 1 ]] &&
             conf=$(ls $dir/*.{conf,ovpn} 2>&-); }
-[[ -f $cert ]] || { [[ $(ls $dir/*.crt 2>&- | wc -w) -eq 1 ]] &&
-            cert=$(ls $dir/*.crt 2>&-); }
+[[ -f $cert ]] || { [[ $(ls $dir/*.{cert,crt} 2>&- | wc -w) -eq 1 ]] &&
+            cert=$(ls $dir/*.{cert,crt} 2>&-); }
 
 ### cert_auth: setup auth passwd for accessing certificate
 # Arguments:
