@@ -133,6 +133,7 @@ ENVIRONMENT VARIABLES (only available with `docker run`)
  * `TZ` - As above, set a zoneinfo timezone, IE `EST5EDT`
  * `VPN` - As above, setup a VPN connection
  * `VPNPORT` - As above, setup port forwarding
+ * `GROUPID` - Set the GID for the vpn
 
 ## Examples
 
