@@ -215,6 +215,7 @@ shift $(( OPTIND - 1 ))
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)
 [[ "${DNS:-""}" ]] && dns
 [[ "${VPNPORT:-""}" ]] && vpnportforward "$VPNPORT"
+[[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
