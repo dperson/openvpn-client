@@ -110,6 +110,9 @@ the second container (that's what `--net=container:vpn` does).
                     optional arg: [port] to use, instead of default
         -p '<port>' Forward port <port>
                     required arg: '<port>'
+        -R '<network>' CIDR IPv6 network (IE fe00:d34d:b33f::/64)
+                    required arg: '<network>'
+                    <network> add a route to (allows replies once the VPN is up)
         -r '<network>' CIDR network (IE 192.168.1.0/24)
                     required arg: '<network>'
                     <network> add a route to (allows replies once the VPN is up)
@@ -129,6 +132,7 @@ ENVIRONMENT VARIABLES (only available with `docker run`)
  * `CERT_AUTH` - As above, provide authentication to access certificate
  * `DNS` - As above, Use the VPN provider's DNS resolvers
  * `FIREWALL` - As above, setup firewall to disallow net access w/o the VPN
+ * `ROUTE6` - As above, add a route to allow replies to your internal network
  * `ROUTE` - As above, add a route to allow replies to your private network
  * `TZ` - As above, set a zoneinfo timezone, IE `EST5EDT`
  * `VPN` - As above, setup a VPN connection

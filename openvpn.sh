@@ -50,11 +50,25 @@ dns() {
 #   none)
 # Return: configured firewall
 firewall() { local port=${1:-1194} docker_network=$(ip -o addr show dev eth0 |
-            awk '$3 == "inet" {print $4}') network
+            awk '$3 == "inet" {print $4}') network \
+            docker6_network=$(ip -o addr show dev eth0 |
+            awk '$3 == "inet6" {print $4; exit}')
     [[ -z "${1:-""}" && -r $conf ]] &&
         port=$(awk '/^remote / && NF ~ /^[0-9]*$/ {print $NF}' $conf |
                     grep ^ || echo 1194)
 
+    ip6tables -F OUTPUT
+    ip6tables -P OUTPUT DROP
+    ip6tables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    ip6tables -A OUTPUT -o lo -j ACCEPT
+    ip6tables -A OUTPUT -o tap0 -j ACCEPT
+    ip6tables -A OUTPUT -o tun0 -j ACCEPT
+    ip6tables -A OUTPUT -d ${docker6_network} -j ACCEPT
+    ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
+    ip6tables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
+    ip6tables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
+        ip6tables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT
+        ip6tables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT; }
     iptables -F OUTPUT
     iptables -P OUTPUT DROP
     iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
@@ -67,7 +81,19 @@ firewall() { local port=${1:-1194} docker_network=$(ip -o addr show dev eth0 |
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
         iptables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT
         iptables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT; }
-    [[ -s $file ]] && for network in $(cat $file); do return_route $network;done
+    [[ -s $route6 ]] && for net in $(cat $route6); do return_route6 $net; done
+    [[ -s $route ]] && for net in $(cat $route); do return_route $net; done
+}
+
+### return_route: add a route back to your network, so that return traffic works
+# Arguments:
+#   network) a CIDR specified network range
+# Return: configured return route
+return_route6() { local network="$1" gw=$(ip -6 route|awk '/default/{print $3}')
+    ip -6 route | grep -q "$network" ||
+        ip -6 route add to $network via $gw dev eth0
+    ip6tables -A OUTPUT --destination $network -j ACCEPT
+    [[ -e $route6 ]] &&grep -q "^$network\$" $route6 ||echo "$network" >>$route6
 }
 
 ### return_route: add a route back to your network, so that return traffic works
@@ -77,8 +103,8 @@ firewall() { local port=${1:-1194} docker_network=$(ip -o addr show dev eth0 |
 return_route() { local network="$1" gw=$(ip route | awk '/default/ {print $3}')
     ip route | grep -q "$network" ||
         ip route add to $network via $gw dev eth0
-    [[ -e $file ]] && iptables -A OUTPUT --destination $network -j ACCEPT
-    [[ -e $file ]] && grep -q "^$network\$" $file || echo "$network" >>$file
+    iptables -A OUTPUT --destination $network -j ACCEPT
+    [[ -e $route ]] && grep -q "^$network\$" $route || echo "$network" >>$route
 }
 
 ### timezone: Set the timezone for the container
@@ -135,7 +161,8 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
     echo "$pass" >>$auth
     chmod 0600 $auth
 
-    [[ "${FIREWALL:-""}" || -e $file ]] && [[ "${4:-""}" ]] && firewall $port
+    [[ "${FIREWALL:-""}" || -e $route6 || -e $route ]] &&
+        [[ "${4:-""}" ]] && firewall $port
 }
 
 ### vpnportforward: setup vpn port forwarding
@@ -143,6 +170,8 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
 #   port) forwarded port
 # Return: configured NAT rule
 vpnportforward() { local port="$1"
+    ip6tables -t nat -A OUTPUT -p tcp --dport $port -j DNAT \
+                --to-destination ::11:$port
     iptables -t nat -A OUTPUT -p tcp --dport $port -j DNAT \
                 --to-destination 127.0.0.11:$port
     echo "Setup forwarded port: $port"
@@ -165,6 +194,9 @@ Options (fields in '[]' are optional, '<>' are required):
                 optional arg: [port] to use, instead of default
     -p '<port>' Forward port <port>
                   required arg: '<port>'
+    -R '<network>' CIDR IPv6 network (IE fe00:d34d:b33f::/64)
+                required arg: '<network>'
+                <network> add a route to (allows replies once the VPN is up)
     -r '<network>' CIDR network (IE 192.168.1.0/24)
                 required arg: '<network>'
                 <network> add a route to (allows replies once the VPN is up)
@@ -186,19 +218,21 @@ dir="/vpn"
 auth="$dir/vpn.cert_auth"
 conf="$dir/vpn.conf"
 cert="$dir/vpn-ca.crt"
-file="$dir/.firewall"
+route="$dir/.firewall"
+route6="$dir/.firewall6"
 [[ -f $conf ]] || { [[ $(ls $dir/*|egrep '\.(conf|ovpn)$' 2>&-|wc -w) -eq 1 ]]&&
             conf=$(ls $dir/* | egrep '\.(conf|ovpn)$' 2>&-); }
 [[ -f $cert ]] || { [[ $(ls $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 ]] &&
             cert=$(ls $dir/* | egrep '\.ce?rt$' 2>&-); }
 
-while getopts ":hc:df:p:r:t:v:" opt; do
+while getopts ":hc:df:p:R:r:t:v:" opt; do
     case "$opt" in
         h) usage ;;
         c) cert_auth "$OPTARG" ;;
         d) DNS=true ;;
         f) firewall "$OPTARG"; touch $file ;;
         p) vpnportforward "$OPTARG" ;;
+        R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
         t) timezone "$OPTARG" ;;
         v) eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $OPTARG) ;;
@@ -209,7 +243,8 @@ done
 shift $(( OPTIND - 1 ))
 
 [[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
-[[ "${FIREWALL:-""}" || -e $file ]] && firewall "${FIREWALL:-""}"
+[[ "${FIREWALL:-""}" || -e $route ]] && firewall "${FIREWALL:-""}"
+[[ "${ROUTE6:-""}" ]] && return_route6 "$ROUTE6"
 [[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
 [[ "${TZ:-""}" ]] && timezone "$TZ"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)
