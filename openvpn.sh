@@ -230,7 +230,7 @@ while getopts ":hc:df:p:R:r:t:v:" opt; do
         h) usage ;;
         c) cert_auth "$OPTARG" ;;
         d) DNS=true ;;
-        f) firewall "$OPTARG"; touch $file ;;
+        f) firewall "$OPTARG"; touch $route $route6 ;;
         p) vpnportforward "$OPTARG" ;;
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
