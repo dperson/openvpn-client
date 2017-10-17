@@ -15,9 +15,9 @@ RUN export DEBIAN_FRONTEND='noninteractive' && \
     echo '    cat $conf.orig >$conf' >>/sbin/resolvconf && \
     echo 'fi' >>/sbin/resolvconf && \
     chmod +x /sbin/resolvconf && \
+    addgroup --system vpn && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* && \
-    addgroup --system vpn
+    rm -rf /var/lib/apt/lists/* /tmp/*
 COPY openvpn.sh /usr/bin/
 
 VOLUME ["/vpn"]
