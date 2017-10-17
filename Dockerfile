@@ -1,4 +1,4 @@
-FROM debian:stretch
+FROM debian:stretch-slim
 MAINTAINER David Personette <dperson@gmail.com>
 
 # Install openvpn
