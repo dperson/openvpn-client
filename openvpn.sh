@@ -41,8 +41,8 @@ dns() {
     sed -i '/resolv-*conf/d; /script-security/d' $conf
     echo "# This updates the resolvconf with dns settings" >>$conf
     echo "script-security 2" >>$conf
-    echo "up /etc/openvpn/update-resolv-conf" >>$conf
-    echo "down /etc/openvpn/update-resolv-conf" >>$conf
+    echo "up /etc/openvpn/up.sh" >>$conf
+    echo "down /etc/openvpn/down.sh" >>$conf
 }
 
 ### firewall: firewall all output not DNS/VPN that's not over the VPN connection
@@ -105,23 +105,6 @@ return_route() { local network="$1" gw=$(ip route | awk '/default/ {print $3}')
         ip route add to $network via $gw dev eth0
     iptables -A OUTPUT --destination $network -j ACCEPT
     [[ -e $route ]] && grep -q "^$network\$" $route || echo "$network" >>$route
-}
-
-### timezone: Set the timezone for the container
-# Arguments:
-#   timezone) for example EST5EDT
-# Return: the correct zoneinfo file will be symlinked into place
-timezone() { local timezone="${1:-EST5EDT}"
-    [[ -e /usr/share/zoneinfo/$timezone ]] || {
-        echo "ERROR: invalid timezone specified: $timezone" >&2
-        return
-    }
-
-    if [[ -w /etc/timezone && $(cat /etc/timezone) != $timezone ]]; then
-        echo "$timezone" >/etc/timezone
-        ln -sf /usr/share/zoneinfo/$timezone /etc/localtime
-        dpkg-reconfigure -f noninteractive tzdata >/dev/null 2>&1
-    fi
 }
 
 ### vpn: setup openvpn client
@@ -200,8 +183,6 @@ Options (fields in '[]' are optional, '<>' are required):
     -r '<network>' CIDR network (IE 192.168.1.0/24)
                 required arg: '<network>'
                 <network> add a route to (allows replies once the VPN is up)
-    -t ''       Configure timezone
-                optionalarg: '[timezone]' - zoneinfo timezone for container
     -v '<server;user;password[;port]>' Configure OpenVPN
                 required arg: '<server>;<user>;<password>'
                 <server> to connect to (multiple servers are separated by :)
@@ -225,7 +206,7 @@ route6="$dir/.firewall6"
 [[ -f $cert ]] || { [[ $(ls $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 ]] &&
             cert=$(ls $dir/* | egrep '\.ce?rt$' 2>&-); }
 
-while getopts ":hc:df:p:R:r:t:v:" opt; do
+while getopts ":hc:df:p:R:r:v:" opt; do
     case "$opt" in
         h) usage ;;
         c) cert_auth "$OPTARG" ;;
@@ -234,8 +215,7 @@ while getopts ":hc:df:p:R:r:t:v:" opt; do
         p) vpnportforward "$OPTARG" ;;
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
-        t) timezone "$OPTARG" ;;
-        v) eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $OPTARG) ;;
+        v) eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
         "?") echo "Unknown option: -$OPTARG"; usage 1 ;;
         ":") echo "No argument value for option: -$OPTARG"; usage 2 ;;
     esac
@@ -246,8 +226,7 @@ shift $(( OPTIND - 1 ))
 [[ "${FIREWALL:-""}" || -e $route ]] && firewall "${FIREWALL:-""}"
 [[ "${ROUTE6:-""}" ]] && return_route6 "$ROUTE6"
 [[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
-[[ "${TZ:-""}" ]] && timezone "$TZ"
-[[ "${VPN:-""}" ]] && eval vpn $(sed 's/^\|$/"/g; s/;/" "/g' <<< $VPN)
+[[ "${VPN:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN)
 [[ "${DNS:-""}" ]] && dns
 [[ "${VPNPORT:-""}" ]] && vpnportforward "$VPNPORT"
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
