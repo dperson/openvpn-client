@@ -41,8 +41,8 @@ dns() {
     sed -i '/resolv-*conf/d; /script-security/d' $conf
     echo "# This updates the resolvconf with dns settings" >>$conf
     echo "script-security 2" >>$conf
-    echo "up /etc/openvpn/update-resolv-conf" >>$conf
-    echo "down /etc/openvpn/update-resolv-conf" >>$conf
+    echo "up /etc/openvpn/up.sh" >>$conf
+    echo "down /etc/openvpn/down.sh" >>$conf
 }
 
 ### firewall: firewall all output not DNS/VPN that's not over the VPN connection
