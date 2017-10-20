@@ -116,8 +116,6 @@ the second container (that's what `--net=container:vpn` does).
         -r '<network>' CIDR network (IE 192.168.1.0/24)
                     required arg: '<network>'
                     <network> add a route to (allows replies once the VPN is up)
-        -t ''       Configure timezone
-                    optionalarg: '[timezone]' - zoneinfo timezone for container
         -v '<server;user;password[;port]>' Configure OpenVPN
                     required arg: '<server>;<user>;<password>'
                     <server> to connect to (multiple servers are separated by :)
@@ -134,7 +132,7 @@ ENVIRONMENT VARIABLES (only available with `docker run`)
  * `FIREWALL` - As above, setup firewall to disallow net access w/o the VPN
  * `ROUTE6` - As above, add a route to allow replies to your internal network
  * `ROUTE` - As above, add a route to allow replies to your private network
- * `TZ` - As above, set a zoneinfo timezone, IE `EST5EDT`
+ * `TZ` - Set a timezone, IE `EST5EDT`
  * `VPN` - As above, setup a VPN connection
  * `VPNPORT` - As above, setup port forwarding
  * `GROUPID` - Set the GID for the vpn
@@ -148,24 +146,8 @@ Any of the commands can be run at creation with `docker run` or later with
 
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
-                -v /some/path:/vpn -d dperson/openvpn-client -t EST5EDT \
-                -v 'vpn.server.name;username;password'
-
-OR using `environment variables`
-
-    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
-    sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 -v /some/path:/vpn -e TZ=EST5EDT -d dperson/openvpn \
                 -v 'vpn.server.name;username;password'
-
-Will get you the same settings as:
-
-    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
-    sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
-                -v /some/path:/vpn -d dperson/openvpn-client \
-                -v 'vpn.server.name;username;password'
-    sudo docker exec -it vpn openvpn.sh -t EST5EDT ls -AlF /etc/localtime
-    sudo docker restart vpn
 
 ### VPN configuration
 
