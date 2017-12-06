@@ -1,4 +1,8 @@
-[![logo](https://raw.githubusercontent.com/dperson/openvpn-client/master/logo.png)](https://openvpn.net/)
+<div align='center'>
+  <a href='https://openvpn.net'>
+    <img src='https://raw.githubusercontent.com/dperson/openvpn-client/master/logo.png' alt='logo' />
+  </a>
+</div>
 
 # OpenVPN
 
