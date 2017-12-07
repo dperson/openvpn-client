@@ -1,59 +1,66 @@
-version: '2.1'
+version: '3.4'
 
 services:
-  service1:
-    image: docker_hub_user/container_name
-    depends_on:
-      - vpn
-    environment:
-      TZ: 'EST5EDT'
-    network_mode: "service:vpn"
-    read_only: true
-    tmpfs:
-      - /tmp
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
-    volumes:
-      - /srv/service1:/var/lib/service1:Z
-
+  # This is the vpn service responsible for establishing a connection to the VPN
+  # server and sending traffic to (and from) it.
   vpn:
     image: dperson/openvpn-client
+
+    # Extra permissions required for the image to function.
     cap_add:
       - net_admin
-  #  dns:
-  #    - 8.8.4.4
-  #    - 8.8.8.8
-    environment:
-      TZ: 'EST5EDT'
-    read_only: true
-    tmpfs:
-      - /tmp
-    restart: unless-stopped
     security_opt:
       - label:disable
-    stdin_open: true
-    tty: true
-    volumes:
-      - /dev/net:/dev/net:z
+    devices:
+      - /dev/net/tun
+
+    # If you need to interactively enter your password, un-comment the following
+    # lines.
+    # stdin_open: true
+    # tty: true
+
+    # The only traffic allowed out of this container is traffic to this network
+    # and TCP/UDP from the vpn linux group.
+    networks:
+      - local
+
+    # Put .ovpn configuration file in the /vpn directory of the container or
+    # launch using the command line arguments.
+    # volumes:
+    #   - ./vpn:/vpn
+    # command: 'server;user;password[;port]'
+
+  # This service utilizes the VPN connection using network_mode.
+  service1:
+    image: jwilder/whoami
+
+    # This container binds to port 8000.
+
+    # Share the network stack of the vpn client container. When this container
+    # binds ports, they can be reached through the vpn service. This also adds a
+    # depnds_on for the vpn service.
+    network_mode: service:vpn
 
   web:
     image: dperson/nginx
     depends_on:
       - service1
-    environment:
-      TZ: 'EST5EDT'
-    links:
-      - vpn:service1
+
+    # Connect to the "local" network to connect to the service1 service through
+    # the vpn service.
+    networks:
+      - local
+
+    # Bind ports to 0.0.0.0 of the host machine.
     ports:
       - "80:80"
       - "443:443"
-    read_only: true
-    tmpfs:
-      - /run
-      - /tmp
-      - /var/cache/nginx
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
-    command: -w "http://service1:8888;/service1"
+
+    # service1 shares the network stack of vpn. The vpn can by reached by using
+    # the name of the service container as a hostname.
+    command: -w "http://vpn:8000;/vpn"
+
+networks:
+  # A network for connecting the web service to service1 (and the vpn service
+  # which it shares a network stack with).
+  local:

@@ -1,8 +1,13 @@
-[![logo](https://raw.githubusercontent.com/dperson/openvpn-client/master/logo.png)](https://openvpn.net/)
+<div align='center'>
+  <a href='https://openvpn.net'>
+    <img src='https://raw.githubusercontent.com/dperson/openvpn-client/master/logo.png' alt='logo' />
+  </a>
+</div>
 
 # OpenVPN
 
-OpenVPN client docker container
+This is an OpenVPN client docker container. It makes routing containers'
+traffic through OpenVPN easy.
 
 # What is OpenVPN?
 
@@ -14,8 +19,26 @@ capable of traversing network address translators (NATs) and firewalls.
 
 # How to use this image
 
-This OpenVPN container was designed to be started first to provide a connection
-to other containers (using `--net=container:vpn`, see below).
+This container provides a tunneled connection to other containers by sharing its
+network stack (using `--net=container:vpn`).
+
+First, start the vpn container with the following command (see below for
+alternative ways to launch the vpn container):
+
+    docker run \
+      --name vpn \
+      --cap-add=NET_ADMIN \
+      --device /dev/net/tun \
+      --volume /path/to/config.ovpn:/vpn/config.ovpn \
+      dperson/openvpn-client
+
+Then start containers which will be using the vpn with the
+`--net=container:vpn-container-name` flag. The new container will adopt the
+network stack of the vpn container (routing table, firewall, dns). This means
+any ports bound on the new container are accessible through the vpn container
+and the network (if any) the vpn container is bound to.
+
+    docker run -it --net=container:vpn some/docker-container
 
 **NOTE**: More than the basic privileges are needed for OpenVPN. With docker 1.2
 or newer you can use the `--cap-add=NET_ADMIN` and `--device /dev/net/tun`
@@ -36,8 +59,9 @@ container) when you launch the service in it's container.
 **NOTE 5**: If you need a template for using this container with
 `docker-compose`, see the example
 [file](https://github.com/dperson/openvpn-client/raw/master/docker-compose.yml).
+It's minimal and well documented.
 
-## Hosting an OpenVPN client instance
+## Launching With Command Line Arguments
 
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
