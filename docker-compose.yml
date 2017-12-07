@@ -1,31 +1,15 @@
-version: '2.1'
+version: '3.4'
 
 services:
-  service1:
-    image: docker_hub_user/container_name
-    depends_on:
-      - vpn
-    environment:
-      TZ: 'EST5EDT'
-    network_mode: "service:vpn"
-    read_only: true
-    tmpfs:
-      - /tmp
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
-    volumes:
-      - /srv/service1:/var/lib/service1:Z
-
   vpn:
     image: dperson/openvpn-client
+    # cap_add, security_opt, and volume required for the image to function
     cap_add:
       - net_admin
-  #  dns:
-  #    - 8.8.4.4
-  #    - 8.8.8.8
     environment:
       TZ: 'EST5EDT'
+    networks:
+      - default
     read_only: true
     tmpfs:
       - /tmp
@@ -36,6 +20,24 @@ services:
     tty: true
     volumes:
       - /dev/net:/dev/net:z
+    # Put .ovpn configuration file in the /vpn directory (in "volumes:" above or
+    # launch using the command line arguments, IE pick one:
+    #  - ./vpn:/vpn
+    # command: 'server;user;password[;port]'
+
+  # Replace "service1" with and image with an actual service you want to run
+  service1:
+    image: docker_hub_user/container_name
+    depends_on:
+      - vpn
+    environment:
+      TZ: 'EST5EDT'
+    network_mode: "service:vpn"
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    volumes:
+      - /srv/service1:/var/lib/service1:Z
 
   web:
     image: dperson/nginx
@@ -45,6 +47,8 @@ services:
       TZ: 'EST5EDT'
     links:
       - vpn:service1
+    networks:
+      - default
     ports:
       - "80:80"
       - "443:443"
@@ -57,3 +61,8 @@ services:
     stdin_open: true
     tty: true
     command: -w "http://service1:8888;/service1"
+    # service1 shares the network stack of vpn. The service can by reached using
+    # the name of the service as a hostname.
+
+networks:
+  default:

@@ -2,7 +2,8 @@
 
 # OpenVPN
 
-OpenVPN client docker container
+This is an OpenVPN client docker container. It makes routing containers'
+traffic through OpenVPN easy.
 
 # What is OpenVPN?
 
@@ -15,7 +16,8 @@ capable of traversing network address translators (NATs) and firewalls.
 # How to use this image
 
 This OpenVPN container was designed to be started first to provide a connection
-to other containers (using `--net=container:vpn`, see below).
+to other containers (using `--net=container:vpn`, see below *Starting an OpenVPN
+client instance*).
 
 **NOTE**: More than the basic privileges are needed for OpenVPN. With docker 1.2
 or newer you can use the `--cap-add=NET_ADMIN` and `--device /dev/net/tun`
@@ -37,7 +39,7 @@ container) when you launch the service in it's container.
 `docker-compose`, see the example
 [file](https://github.com/dperson/openvpn-client/raw/master/docker-compose.yml).
 
-## Hosting an OpenVPN client instance
+## Starting an OpenVPN client instance
 
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
