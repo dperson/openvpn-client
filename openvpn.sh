@@ -126,9 +126,10 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
     done
     [[ $server =~ : ]] && echo "remote-random" >>$conf
     echo "resolv-retry infinite" >>$conf
-    echo "keepalive 10 30" >>$conf
+    echo "keepalive 10 60" >>$conf
     echo "nobind" >>$conf
     echo "persist-key" >>$conf
+    echo "persist-tun" >>$conf
     [[ "${CIPHER:-""}" ]] && echo "cipher $CIPHER" >>$conf
     [[ "${AUTH:-""}" ]] && echo "auth $AUTH" >>$conf
     echo "tls-client" >>$conf
@@ -137,9 +138,11 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
     echo "comp-lzo" >>$conf
     echo "verb 1" >>$conf
     echo "reneg-sec 0" >>$conf
+    echo "redirect-gateway def1" >>$conf
+    echo "disable-occ" >>$conf
+    echo "fast-io" >>$conf
     echo "ca $cert" >>$conf
     [[ $(wc -w <<< $pem) -eq 1 ]] && echo "crl-verify $pem" >>$conf
-    echo "redirect-gateway def1" >>$conf
 
     echo "$user" >$auth
     echo "$pass" >>$auth
