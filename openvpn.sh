@@ -49,13 +49,13 @@ dns() {
 # Arguments:
 #   none)
 # Return: configured firewall
-firewall() { local port=${1:-1194} docker_network=$(ip -o addr show dev eth0 |
-            awk '$3 == "inet" {print $4}') network \
-            docker6_network=$(ip -o addr show dev eth0 |
-            awk '$3 == "inet6" {print $4; exit}')
+firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
+            awk '$3 == "inet" {print $4}')" network \
+            docker6_network="$(ip -o addr show dev eth0 |
+            awk '$3 == "inet6" {print $4; exit}')"
     [[ -z "${1:-""}" && -r $conf ]] &&
-        port=$(awk '/^remote / && NF ~ /^[0-9]*$/ {print $NF}' $conf |
-                    grep ^ || echo 1194)
+        port="$(awk '/^remote / && NF ~ /^[0-9]*$/ {print $NF}' $conf |
+                    grep ^ || echo 1194)"
 
     ip6tables -F OUTPUT 2>/dev/null
     ip6tables -P OUTPUT DROP 2>/dev/null
@@ -90,7 +90,8 @@ firewall() { local port=${1:-1194} docker_network=$(ip -o addr show dev eth0 |
 # Arguments:
 #   network) a CIDR specified network range
 # Return: configured return route
-return_route6() { local network="$1" gw=$(ip -6 route|awk '/default/{print $3}')
+return_route6() { local network="$1" gw="$(ip -6 route |
+                awk '/default/{print $3}')"
     ip -6 route | grep -q "$network" ||
         ip -6 route add to $network via $gw dev eth0
     ip6tables -A OUTPUT --destination $network -j ACCEPT 2>/dev/null
@@ -101,7 +102,7 @@ return_route6() { local network="$1" gw=$(ip -6 route|awk '/default/{print $3}')
 # Arguments:
 #   network) a CIDR specified network range
 # Return: configured return route
-return_route() { local network="$1" gw=$(ip route | awk '/default/ {print $3}')
+return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
     ip route | grep -q "$network" ||
         ip route add to $network via $gw dev eth0
     iptables -A OUTPUT --destination $network -j ACCEPT
@@ -116,7 +117,7 @@ return_route() { local network="$1" gw=$(ip route | awk '/default/ {print $3}')
 #   port) port to connect to VPN (optional)
 # Return: configured .ovpn file
 vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
-            pem=$(\ls $dir/*.pem 2>&-)
+            pem="$(\ls $dir/*.pem 2>&-)"
 
     echo "client" >$conf
     echo "dev tun" >>$conf
@@ -168,7 +169,7 @@ vpnportforward() { local port="$1"
 # Arguments:
 #   none)
 # Return: Help text
-usage() { local RC=${1:-0}
+usage() { local RC="${1:-0}"
     echo "Usage: ${0##*/} [-opt] [command]
 Options (fields in '[]' are optional, '<>' are required):
     -h          This help
@@ -206,9 +207,9 @@ cert="$dir/vpn-ca.crt"
 route="$dir/.firewall"
 route6="$dir/.firewall6"
 [[ -f $conf ]] || { [[ $(ls $dir/*|egrep '\.(conf|ovpn)$' 2>&-|wc -w) -eq 1 ]]&&
-            conf=$(ls $dir/* | egrep '\.(conf|ovpn)$' 2>&-); }
+            conf="$(ls $dir/* | egrep '\.(conf|ovpn)$' 2>&-)"; }
 [[ -f $cert ]] || { [[ $(ls $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 ]] &&
-            cert=$(ls $dir/* | egrep '\.ce?rt$' 2>&-); }
+            cert="$(ls $dir/* | egrep '\.ce?rt$' 2>&-)"; }
 
 while getopts ":hc:df:p:R:r:v:" opt; do
     case "$opt" in
