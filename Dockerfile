@@ -4,7 +4,7 @@ MAINTAINER David Personette <dperson@gmail.com>
 # Install openvpn
 RUN apk --no-cache --no-progress upgrade && \
     apk --no-cache --no-progress add bash curl ip6tables iptables openvpn \
-                shadow && \
+                shadow tini && \
     addgroup -S vpn && \
     rm -rf /tmp/*
 
@@ -15,4 +15,4 @@ HEALTHCHECK --interval=60s --timeout=15s --start-period=120s \
 
 VOLUME ["/vpn"]
 
-ENTRYPOINT ["openvpn.sh"]
+ENTRYPOINT ["/sbin/tini", "--", "/usr/bin/openvpn.sh"]
