@@ -110,8 +110,9 @@ the second container (that's what `--net=container:vpn` does).
         -f '[port]' Firewall rules so that only the VPN and DNS are allowed to
                     send internet traffic (IE if VPN is down it's offline)
                     optional arg: [port] to use, instead of default
-        -p '<port>' Forward port <port>
+        -p '<port[;protocol]>' Forward port
                     required arg: '<port>'
+                    optional arg: [protocol] to use instead of default(tcp)
         -R '<network>' CIDR IPv6 network (IE fe00:d34d:b33f::/64)
                     required arg: '<network>'
                     <network> add a route to (allows replies once the VPN is up)
