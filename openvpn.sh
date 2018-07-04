@@ -157,12 +157,12 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
 # Arguments:
 #   port) forwarded port
 # Return: configured NAT rule
-vpnportforward() { local port="$1"
-    ip6tables -t nat -A OUTPUT -p tcp --dport $port -j DNAT \
+vpnportforward() { local port="$1" protocol="${2:-tcp}"
+    ip6tables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
                 --to-destination ::11:$port 2>/dev/null
-    iptables -t nat -A OUTPUT -p tcp --dport $port -j DNAT \
+    iptables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
                 --to-destination 127.0.0.11:$port
-    echo "Setup forwarded port: $port"
+    echo "Setup forwarded port: $port $protocol"
 }
 
 ### usage: Help
@@ -180,8 +180,9 @@ Options (fields in '[]' are optional, '<>' are required):
     -f '[port]' Firewall rules so that only the VPN and DNS are allowed to
                 send internet traffic (IE if VPN is down it's offline)
                 optional arg: [port] to use, instead of default
-    -p '<port>' Forward port <port>
+    -p '<port[;protocol]>' Forward port
                   required arg: '<port>'
+                  optional arg: [protocol] to use instead of default(tcp)
     -R '<network>' CIDR IPv6 network (IE fe00:d34d:b33f::/64)
                 required arg: '<network>'
                 <network> add a route to (allows replies once the VPN is up)
@@ -217,7 +218,7 @@ while getopts ":hc:df:p:R:r:v:" opt; do
         c) cert_auth "$OPTARG" ;;
         d) DNS=true ;;
         f) firewall "$OPTARG"; touch $route $route6 ;;
-        p) vpnportforward "$OPTARG" ;;
+        p) eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
         v) eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
@@ -233,7 +234,7 @@ shift $(( OPTIND - 1 ))
 [[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN)
 [[ "${DNS:-""}" ]] && dns
-[[ "${VPNPORT:-""}" ]] && vpnportforward "$VPNPORT"
+[[ "${VPNPORT:-""}" ]] && eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPNPORT)
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
