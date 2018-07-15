@@ -177,13 +177,34 @@ vpn() { local server user pass port i pem
 
 ### vpnportforward: setup vpn port forwarding
 # Arguments:
-#   port) forwarded port
+#   port) forwarded port (e.g., 21, 21/tcp, 21/udp)
 # Return: configured NAT rule
-vpnportforward() { local port="$1"
-    ip6tables -t nat -A OUTPUT -p tcp --dport "$port" -j DNAT \
-                --to-destination ::11:"$port" 2>/dev/null
-    iptables -t nat -A OUTPUT -p tcp --dport "$port" -j DNAT \
-                --to-destination 127.0.0.11:"$port"
+vpnportforward() { local port port_type
+    if [[ "$1" == */udp ]]; then
+        port="${1/\/udp/}"
+        port_type="udp"
+    elif [[ "$1" == */tcp ]]; then
+        port="${1/\/tcp/}"
+        port_type="tcp"
+    else
+        port="$1"
+        port_type='both'
+    fi
+
+    if [ "${port_type}" == 'udp' ] || [ "${port_type}" == 'both' ]; then
+        ip6tables -t nat -A OUTPUT -p udp --dport "$port" -j DNAT \
+                    --to-destination ::11:"$port" 2>/dev/null
+        iptables -t nat -A OUTPUT -p udp --dport "$port" -j DNAT \
+                    --to-destination 127.0.0.11:"$port"
+    fi
+
+    if [ "${port_type}" == 'tcp' ] || [ "${port_type}" == 'both' ]; then
+        ip6tables -t nat -A OUTPUT -p tcp --dport "$port" -j DNAT \
+                    --to-destination ::11:"$port" 2>/dev/null
+        iptables -t nat -A OUTPUT -p tcp --dport "$port" -j DNAT \
+                    --to-destination 127.0.0.11:"$port"
+    fi
+
     echo "Setup forwarded port: $port"
 }
 
@@ -204,6 +225,10 @@ Options (fields in '[]' are optional, '<>' are required):
                 optional arg: [port] to use, instead of default
     -p '<port>' Forward port <port>
                   required arg: '<port>'
+                  <port> allows protocol scoping
+                  21/tcp for port 21 only TCP
+                  21/udp for port 21 only UDP
+                  21 for port 21 both UDP and TCP
     -R '<network>' CIDR IPv6 network (IE fe00:d34d:b33f::/64)
                 required arg: '<network>'
                 <network> add a route to (allows replies once the VPN is up)
