@@ -129,7 +129,7 @@ the second container (that's what `--net=container:vpn` does).
 
     The 'command' (if provided and valid) will be run instead of openvpn
 
-ENVIRONMENT VARIABLES (only available with `docker run`)
+ENVIRONMENT VARIABLES
 
  * `CERT_AUTH` - As above, provide authentication to access certificate
  * `DNS` - As above, Use the VPN provider's DNS resolvers
