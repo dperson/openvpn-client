@@ -112,8 +112,9 @@ the second container (that's what `--net=container:vpn` does).
                     optional arg: [port] to use, instead of default
         -m '<mss>'  Maximum Segment Size <mss>
                     required arg: '<mss>'
-        -p '<port>' Forward port <port>
+        -p '<port>[;protocol]' Forward port <port>
                     required arg: '<port>'
+                    optional arg: [protocol] to use instead of default (tcp)
         -R '<network>' CIDR IPv6 network (IE fe00:d34d:b33f::/64)
                     required arg: '<network>'
                     <network> add a route to (allows replies once the VPN is up)

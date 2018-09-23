@@ -157,12 +157,12 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
 # Arguments:
 #   port) forwarded port
 # Return: configured NAT rule
-vpnportforward() { local port="$1"
-    ip6tables -t nat -A OUTPUT -p tcp --dport $port -j DNAT \
+vpnportforward() { local port="$1" protocol="${2:-tcp}"
+    ip6tables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
                 --to-destination ::11:$port 2>/dev/null
-    iptables -t nat -A OUTPUT -p tcp --dport $port -j DNAT \
+    iptables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
                 --to-destination 127.0.0.11:$port
-    echo "Setup forwarded port: $port"
+    echo "Setup forwarded port: $port $protocol
 }
 
 ### usage: Help
@@ -182,8 +182,9 @@ Options (fields in '[]' are optional, '<>' are required):
                 optional arg: [port] to use, instead of default
     -m '<mss>'  Maximum Segment Size <mss>
                 required arg: '<mss>'
-    -p '<port>' Forward port <port>
-                  required arg: '<port>'
+    -p '<port>[;protocol]' Forward port <port>
+                required arg: '<port>'
+                optional arg: [protocol] to use instead of default (tcp)
     -R '<network>' CIDR IPv6 network (IE fe00:d34d:b33f::/64)
                 required arg: '<network>'
                 <network> add a route to (allows replies once the VPN is up)
@@ -220,7 +221,8 @@ route6="$dir/.firewall6"
 [[ "${ROUTE6:-""}" ]] && return_route6 "$ROUTE6"
 [[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN)
-[[ "${VPNPORT:-""}" ]] && vpnportforward "$VPNPORT"
+[[ "${VPNPORT:-""}" ]] && eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g'\
+            <<< $VPNPORT)
 
 while getopts ":hc:df:m:p:R:r:v:" opt; do
     case "$opt" in
@@ -229,7 +231,7 @@ while getopts ":hc:df:m:p:R:r:v:" opt; do
         d) DNS=true ;;
         f) firewall "$OPTARG"; touch $route $route6 ;;
         m) MSS="$OPTARG" ;;
-        p) vpnportforward "$OPTARG" ;;
+        p) eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
         v) eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
