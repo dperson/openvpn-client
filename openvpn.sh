@@ -162,7 +162,7 @@ vpnportforward() { local port="$1" protocol="${2:-tcp}"
                 --to-destination ::11:$port 2>/dev/null
     iptables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
                 --to-destination 127.0.0.11:$port
-    echo "Setup forwarded port: $port $protocol
+    echo "Setup forwarded port: $port $protocol"
 }
 
 ### usage: Help
