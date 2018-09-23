@@ -211,6 +211,15 @@ route6="$dir/.firewall6"
 [[ -f $cert ]] || { [[ $(ls $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 ]] &&
             cert="$(ls $dir/* | egrep '\.ce?rt$' 2>&-)"; }
 
+[[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
+[[ "${DNS:-""}" ]] && dns
+[[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
+[[ "${FIREWALL:-""}" || -e $route ]] && firewall "${FIREWALL:-""}"
+[[ "${ROUTE6:-""}" ]] && return_route6 "$ROUTE6"
+[[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
+[[ "${VPN:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN)
+[[ "${VPNPORT:-""}" ]] && vpnportforward "$VPNPORT"
+
 while getopts ":hc:df:p:R:r:v:" opt; do
     case "$opt" in
         h) usage ;;
@@ -226,15 +235,6 @@ while getopts ":hc:df:p:R:r:v:" opt; do
     esac
 done
 shift $(( OPTIND - 1 ))
-
-[[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
-[[ "${FIREWALL:-""}" || -e $route ]] && firewall "${FIREWALL:-""}"
-[[ "${ROUTE6:-""}" ]] && return_route6 "$ROUTE6"
-[[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
-[[ "${VPN:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN)
-[[ "${DNS:-""}" ]] && dns
-[[ "${VPNPORT:-""}" ]] && vpnportforward "$VPNPORT"
-[[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
