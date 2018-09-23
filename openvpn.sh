@@ -206,10 +206,10 @@ conf="$dir/vpn.conf"
 cert="$dir/vpn-ca.crt"
 route="$dir/.firewall"
 route6="$dir/.firewall6"
-[[ -f $conf ]] || { [[ $(ls $dir/*|egrep '\.(conf|ovpn)$' 2>&-|wc -w) -eq 1 ]]&&
-            conf="$(ls $dir/* | egrep '\.(conf|ovpn)$' 2>&-)"; }
-[[ -f $cert ]] || { [[ $(ls $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 ]] &&
-            cert="$(ls $dir/* | egrep '\.ce?rt$' 2>&-)"; }
+[[ -f $conf ]] || { [[ $(ls -d $dir/*|egrep '\.(conf|ovpn)$' 2>&-|wc -w) -eq 1 ]]&&
+            conf="$(ls -d $dir/* | egrep '\.(conf|ovpn)$' 2>&-)"; }
+[[ -f $cert ]] || { [[ $(ls -d $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 ]] &&
+            cert="$(ls -d $dir/* | egrep '\.ce?rt$' 2>&-)"; }
 
 [[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
 [[ "${DNS:-""}" ]] && dns
