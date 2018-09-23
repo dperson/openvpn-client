@@ -180,6 +180,8 @@ Options (fields in '[]' are optional, '<>' are required):
     -f '[port]' Firewall rules so that only the VPN and DNS are allowed to
                 send internet traffic (IE if VPN is down it's offline)
                 optional arg: [port] to use, instead of default
+    -m '<mss>'  Maximum Segment Size <mss>
+                required arg: '<mss>'
     -p '<port>' Forward port <port>
                   required arg: '<port>'
     -R '<network>' CIDR IPv6 network (IE fe00:d34d:b33f::/64)
@@ -220,12 +222,13 @@ route6="$dir/.firewall6"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN)
 [[ "${VPNPORT:-""}" ]] && vpnportforward "$VPNPORT"
 
-while getopts ":hc:df:p:R:r:v:" opt; do
+while getopts ":hc:df:m:p:R:r:v:" opt; do
     case "$opt" in
         h) usage ;;
         c) cert_auth "$OPTARG" ;;
         d) DNS=true ;;
         f) firewall "$OPTARG"; touch $route $route6 ;;
+        m) MSS="$OPTARG" ;;
         p) vpnportforward "$OPTARG" ;;
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
@@ -249,5 +252,6 @@ else
     [[ -e $conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
     [[ -e $cert ]] || grep -q '<ca>' $conf ||
         { echo "ERROR: VPN CA cert missing!"; sleep 120; }
-    exec sg vpn -c "openvpn --cd $dir --config $conf"
+    exec sg vpn -c "openvpn --cd $dir --config $conf \
+                ${MSS:+--fragment $MSS --mssfix}"
 fi

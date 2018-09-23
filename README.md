@@ -110,6 +110,8 @@ the second container (that's what `--net=container:vpn` does).
         -f '[port]' Firewall rules so that only the VPN and DNS are allowed to
                     send internet traffic (IE if VPN is down it's offline)
                     optional arg: [port] to use, instead of default
+        -m '<mss>'  Maximum Segment Size <mss>
+                    required arg: '<mss>'
         -p '<port>' Forward port <port>
                     required arg: '<port>'
         -R '<network>' CIDR IPv6 network (IE fe00:d34d:b33f::/64)
@@ -132,6 +134,7 @@ ENVIRONMENT VARIABLES (only available with `docker run`)
  * `CERT_AUTH` - As above, provide authentication to access certificate
  * `DNS` - As above, Use the VPN provider's DNS resolvers
  * `FIREWALL` - As above, setup firewall to disallow net access w/o the VPN
+ * `MSS` - As above, set Maximum Segment Size
  * `ROUTE6` - As above, add a route to allow replies to your internal network
  * `ROUTE` - As above, add a route to allow replies to your private network
  * `TZ` - Set a timezone, IE `EST5EDT`
