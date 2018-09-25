@@ -12,6 +12,7 @@ services:
       - default
     read_only: true
     tmpfs:
+      - /run
       - /tmp
     restart: unless-stopped
     security_opt:
