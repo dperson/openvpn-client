@@ -252,7 +252,7 @@ else
     mkdir -p /dev/net
     [[ -c /dev/net/tun ]] || mknod -m 0666 /dev/net/tun c 10 200
     [[ -e $conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
-    [[ -e $cert ]] || grep -q '<ca>' $conf ||
+    [[ -e $cert ]] || grep -q '\<ca\>' $conf ||
         { echo "ERROR: VPN CA cert missing!"; sleep 120; }
     exec sg vpn -c "openvpn --cd $dir --config $conf \
                 ${MSS:+--fragment $MSS --mssfix}"
