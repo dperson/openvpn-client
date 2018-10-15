@@ -38,7 +38,7 @@ cert_auth() { local passwd="$1"
 #   none)
 # Return: conf file that uses VPN provider's DNS resolvers
 dns() {
-    sed -i '/resolv-*conf/d; /script-security/d' $conf
+    sed -i '/down\|up/d; /resolv-*conf/d; /script-security/d' $conf
     echo "# This updates the resolvconf with dns settings" >>$conf
     echo "script-security 2" >>$conf
     echo "up /etc/openvpn/up.sh" >>$conf
