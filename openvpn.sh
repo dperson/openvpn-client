@@ -65,10 +65,10 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     ip6tables -A OUTPUT -o tap0 -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -o tun0 -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -d ${docker6_network} -j ACCEPT 2>/dev/null
-    ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
-    ip6tables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null ||
-        { ip6tables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT 2>/dev/null
+    ip6tables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null||{
+        ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null
+        ip6tables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT 2>/dev/null
         ip6tables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT 2>/dev/null; }
     iptables -F OUTPUT
     iptables -P OUTPUT DROP
@@ -77,9 +77,9 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     iptables -A OUTPUT -o tap0 -j ACCEPT
     iptables -A OUTPUT -o tun0 -j ACCEPT
     iptables -A OUTPUT -d ${docker_network} -j ACCEPT
-    iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
     iptables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
+        iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
         iptables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT
         iptables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT; }
     [[ -s $route6 ]] && for net in $(cat $route6); do return_route6 $net; done
