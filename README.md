@@ -51,6 +51,24 @@ Once it's up other containers can be started using it's network connection:
 
     sudo docker run -it --net=container:vpn -d some/docker-container
 
+## Running with a preconfigured ovpn file
+
+To run this container with a preconfigured ovpn file you can execute it without the second `-v` option like so:
+
+    sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
+                -v /some/path:/vpn -d dperson/openvpn-client
+
+Make sure you have configured your username and password in the ovpn file via `auth-user-pass`, as the command line openvpn doesn't support interactive authentication.
+
+    auth-user-pass somefile
+
+`somefile`  cannot have the extension `'.conf'`. The script will not find the ovpn config otherwise
+
+Create `somefile` and enter you username an password like so:
+
+    username
+    password
+
 ## Local Network access to services connecting to the internet through the VPN.
 
 However to access them from your normal network (off the 'local' docker bridge),
