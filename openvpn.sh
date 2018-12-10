@@ -23,13 +23,13 @@ set -o nounset                              # Treat unset variables as an error
 #   passwd) Password to access the cert
 # Return: conf file that supports certificate authentication
 cert_auth() { local passwd="$1"
-    grep -q "^${passwd}\$" $auth || {
-        echo "$passwd" >$auth
+    grep -q "^${passwd}\$" $cert_auth || {
+        echo "$passwd" >$cert_auth
     }
-    chmod 0600 $auth
-    grep -q "^askpass ${auth}\$" $conf || {
+    chmod 0600 $cert_auth
+    grep -q "^askpass ${cert_auth}\$" $conf || {
         sed -i '/askpass/d' $conf
-        echo "askpass $auth" >>$conf
+        echo "askpass $cert_auth" >>$conf
     }
 }
 
@@ -204,7 +204,8 @@ The 'command' (if provided and valid) will be run instead of openvpn
 }
 
 dir="/vpn"
-auth="$dir/vpn.cert_auth"
+auth="$dir/vpn.auth"
+cert_auth="$dir/vpn.cert_auth"
 conf="$dir/vpn.conf"
 cert="$dir/vpn-ca.crt"
 route="$dir/.firewall"
