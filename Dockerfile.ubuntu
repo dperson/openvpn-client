@@ -1,0 +1,20 @@
+FROM ubuntu:16.04
+MAINTAINER Eclipse <golekipro@yahoo.co.uk>
+
+# Install openvpn
+RUN apt-get -y update && \
+    apt-get -y upgrade && \
+    apt-get -y install bash wget curl iptables openvpn && \
+    addgroup --system vpn && \
+    wget -nv -O /tmp/tini.deb https://github.com/krallin/tini/releases/download/v0.18.0/tini_0.18.0-amd64.deb && \
+    dpkg -i /tmp/tini.deb && \
+    rm -rf /tmp/*
+
+COPY openvpn.sh /usr/bin/
+
+HEALTHCHECK --interval=60s --timeout=15s --start-period=120s \
+             CMD curl -L 'https://api.ipify.org'
+
+VOLUME ["/vpn"]
+
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/bin/openvpn.sh"]
