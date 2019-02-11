@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.6
 MAINTAINER David Personette <dperson@gmail.com>
 
 # Install openvpn
