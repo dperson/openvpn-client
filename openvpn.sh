@@ -48,6 +48,7 @@ dns() {
 
 allow_only_vpn_dns () {
     local IPT=$1
+    # Will generate the hex string for DNS request in the form |03|www|06|google|03|com including zero padding
     remotes=$(egrep "^remote" $conf | awk '{print $2}' | awk -F '.' '{b=""}{
                 for (i=1;i<=NF;i++) {
                     h=sprintf("%x", length($1));
