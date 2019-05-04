@@ -45,6 +45,22 @@ dns() {
     echo "down /etc/openvpn/down.sh" >>$conf
 }
 
+
+allow_only_vpn_dns () {
+    local IPT=$1
+    remotes=$(egrep "^remote" $conf | awk '{print $2}' | awk -F '.' '{b=""}{
+                for (i=1;i<=NF;i++) {
+                    h=sprintf("%x", length($1));
+                    l=length(h);
+                    t=l+l%2;
+                    b=b"|"sprintf("%0"t"x", length($i))"|"$i;
+                }
+            }{print b}')
+    for rr in $(echo "$remotes"); do
+        ${IPT} -A OUTPUT -p udp -m string --hex-string "${rr}" --algo bm -m udp --dport 53 -j ACCEPT 2>/dev/null
+    done
+}
+
 ### firewall: firewall all output not DNS/VPN that's not over the VPN connection
 # Arguments:
 #   none)
@@ -65,7 +81,7 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     ip6tables -A OUTPUT -o tap0 -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -o tun0 -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -d ${docker6_network} -j ACCEPT 2>/dev/null
-    ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null
+    allow_only_vpn_dns ip6tables
     ip6tables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
     ip6tables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null||{
         ip6tables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT 2>/dev/null
@@ -77,7 +93,7 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     iptables -A OUTPUT -o tap0 -j ACCEPT
     iptables -A OUTPUT -o tun0 -j ACCEPT
     iptables -A OUTPUT -d ${docker_network} -j ACCEPT
-    iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
+    allow_only_vpn_dns iptables
     iptables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
         iptables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT
