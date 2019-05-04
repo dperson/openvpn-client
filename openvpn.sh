@@ -62,6 +62,25 @@ allow_only_vpn_dns () {
     done
 }
 
+configure_default_rules() {
+  IPT=$1
+  ${IPT} -F
+  ${IPT} -X
+  # Default filter policy
+  ${IPT} -P INPUT DROP
+  ${IPT} -P INPUT DROP
+  ${IPT} -P FORWARD DROP
+  # Accept on localhost
+  ${IPT} -A INPUT -i lo -j ACCEPT
+  ${IPT} -A OUTPUT -o lo -j ACCEPT
+  # Allow established sessions to receive traffic
+  ${IPT} -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+  ${IPT} -A FORWARD -j ACCEPT
+
+    
+}
+
 ### firewall: firewall all output not DNS/VPN that's not over the VPN connection
 # Arguments:
 #   none)
@@ -74,11 +93,9 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
         port="$(awk '/^remote / && NF ~ /^[0-9]*$/ {print $NF}' $conf |
                     grep ^ || echo 1194)"
 
-    ip6tables -F OUTPUT 2>/dev/null
-    ip6tables -P OUTPUT DROP 2>/dev/null
+    configure_default_rules ip6tables
     ip6tables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT \
                 2>/dev/null
-    ip6tables -A OUTPUT -o lo -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -o tap0 -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -o tun0 -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -d ${docker6_network} -j ACCEPT 2>/dev/null
@@ -87,10 +104,8 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     ip6tables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null||{
         ip6tables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT 2>/dev/null
         ip6tables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT 2>/dev/null; }
-    iptables -F OUTPUT
-    iptables -P OUTPUT DROP
+    configure_default_rules iptables
     iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    iptables -A OUTPUT -o lo -j ACCEPT
     iptables -A OUTPUT -o tap0 -j ACCEPT
     iptables -A OUTPUT -o tun0 -j ACCEPT
     iptables -A OUTPUT -d ${docker_network} -j ACCEPT
