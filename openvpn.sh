@@ -68,7 +68,7 @@ configure_default_rules() {
   ${IPT} -X
   # Default filter policy
   ${IPT} -P INPUT DROP
-  ${IPT} -P INPUT DROP
+  ${IPT} -P OUTPUT DROP
   ${IPT} -P FORWARD DROP
   # Accept on localhost
   ${IPT} -A INPUT -i lo -j ACCEPT
