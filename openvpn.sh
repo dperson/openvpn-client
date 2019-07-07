@@ -47,7 +47,7 @@ dns() {
 
 ### firewall: firewall all output not DNS/VPN that's not over the VPN connection
 # Arguments:
-#   none)
+#   port) optional port that will be used to connect to VPN (should auto detect)
 # Return: configured firewall
 firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
             awk '$3 == "inet" {print $4}')" network \
