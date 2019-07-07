@@ -57,21 +57,21 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
         port="$(awk '/^remote / && NF ~ /^[0-9]*$/ {print $NF}' $conf |
                     grep ^ || echo 1194)"
 
-    ip6tables -F INPUT 2>/dev/null
+    ip6tables -F 2>/dev/null
+    ip6tables -X 2>/dev/null
     ip6tables -P INPUT DROP 2>/dev/null
+    ip6tables -P FORWARD DROP 2>/dev/null
+    ip6tables -P OUTPUT DROP 2>/dev/null
     ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT \
                 2>/dev/null
     ip6tables -A INPUT -p icmp -j ACCEPT 2>/dev/null
+    ip6tables -A INPUT -i lo -j ACCEPT 2>/dev/null
     ip6tables -A INPUT -s ${docker6_network} -j ACCEPT 2>/dev/null
-    ip6tables -F FORWARD 2>/dev/null
-    ip6tables -P FORWARD DROP 2>/dev/null
     ip6tables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT \
                 2>/dev/null
     ip6tables -A FORWARD -p icmp -j ACCEPT 2>/dev/null
     ip6tables -A FORWARD -i lo -j ACCEPT 2>/dev/null
     ip6tables -A FORWARD -s ${docker6_network} -j ACCEPT 2>/dev/null
-    ip6tables -F OUTPUT 2>/dev/null
-    ip6tables -P OUTPUT DROP 2>/dev/null
     ip6tables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT \
                 2>/dev/null
     ip6tables -A OUTPUT -o lo -j ACCEPT 2>/dev/null
@@ -83,17 +83,17 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     ip6tables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null||{
         ip6tables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT 2>/dev/null
         ip6tables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT 2>/dev/null; }
-    iptables -F INPUT
+    ip6tables -F
+    ip6tables -X
     iptables -P INPUT DROP
-    iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    iptables -A INPUT -s ${docker_network} -j ACCEPT 2>/dev/null
-    iptables -F FORWARD
     iptables -P FORWARD DROP
+    iptables -P OUTPUT DROP
+    iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    iptables -A INPUT -i lo -j ACCEPT 2>/dev/null
+    iptables -A INPUT -s ${docker_network} -j ACCEPT 2>/dev/null
     iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     iptables -A FORWARD -i lo -j ACCEPT 2>/dev/null
     iptables -A FORWARD -s ${docker_network} -j ACCEPT 2>/dev/null
-    iptables -F OUTPUT
-    iptables -P OUTPUT DROP
     iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     iptables -A OUTPUT -o lo -j ACCEPT
     iptables -A OUTPUT -o tap0 -j ACCEPT
