@@ -71,6 +71,7 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
                 2>/dev/null
     ip6tables -A FORWARD -p icmp -j ACCEPT 2>/dev/null
     ip6tables -A FORWARD -i lo -j ACCEPT 2>/dev/null
+    ip6tables -A FORWARD -d ${docker6_network} -j ACCEPT 2>/dev/null
     ip6tables -A FORWARD -s ${docker6_network} -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT \
                 2>/dev/null
@@ -93,6 +94,7 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     iptables -A INPUT -s ${docker_network} -j ACCEPT
     iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     iptables -A FORWARD -i lo -j ACCEPT
+    iptables -A FORWARD -d ${docker_network} -j ACCEPT
     iptables -A FORWARD -s ${docker_network} -j ACCEPT
     iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     iptables -A OUTPUT -o lo -j ACCEPT
