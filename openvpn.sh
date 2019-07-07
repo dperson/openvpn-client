@@ -89,11 +89,11 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     iptables -P FORWARD DROP
     iptables -P OUTPUT DROP
     iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    iptables -A INPUT -i lo -j ACCEPT 2>/dev/null
-    iptables -A INPUT -s ${docker_network} -j ACCEPT 2>/dev/null
+    iptables -A INPUT -i lo -j ACCEPT
+    iptables -A INPUT -s ${docker_network} -j ACCEPT
     iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    iptables -A FORWARD -i lo -j ACCEPT 2>/dev/null
-    iptables -A FORWARD -s ${docker_network} -j ACCEPT 2>/dev/null
+    iptables -A FORWARD -i lo -j ACCEPT
+    iptables -A FORWARD -s ${docker_network} -j ACCEPT
     iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     iptables -A OUTPUT -o lo -j ACCEPT
     iptables -A OUTPUT -o tap0 -j ACCEPT
@@ -118,7 +118,9 @@ return_route6() { local network="$1" gw="$(ip -6 route |
                 awk '/default/{print $3}')"
     ip -6 route | grep -q "$network" ||
         ip -6 route add to $network via $gw dev eth0
+    ip6tables -A INPUT -s $network -j ACCEPT 2>/dev/null
     ip6tables -A FORWARD -d $network -j ACCEPT 2>/dev/null
+    ip6tables -A FORWARD -s $network -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -d $network -j ACCEPT 2>/dev/null
     [[ -e $route6 ]] &&grep -q "^$network\$" $route6 ||echo "$network" >>$route6
 }
@@ -130,7 +132,9 @@ return_route6() { local network="$1" gw="$(ip -6 route |
 return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
     ip route | grep -q "$network" ||
         ip route add to $network via $gw dev eth0
+    iptables -A INPUT -s $network -j ACCEPT
     iptables -A FORWARD -d $network -j ACCEPT
+    iptables -A FORWARD -s $network -j ACCEPT
     iptables -A OUTPUT -d $network -j ACCEPT
     [[ -e $route ]] && grep -q "^$network\$" $route || echo "$network" >>$route
 }
