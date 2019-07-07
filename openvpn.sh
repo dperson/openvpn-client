@@ -104,6 +104,8 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
         iptables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT
         iptables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT; }
+    iptables -t nat -A POSTROUTING -o tap0 -j MASQUERADE
+    iptables -t nat -A POSTROUTING -o tun0 -j MASQUERADE
     [[ -s $route6 ]] && for net in $(cat $route6); do return_route6 $net; done
     [[ -s $route ]] && for net in $(cat $route); do return_route $net; done
 }
