@@ -260,8 +260,9 @@ route6="$dir/.firewall6"
 [[ "${ROUTE6:-""}" ]] && return_route6 "$ROUTE6"
 [[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN)
-[[ "${VPNPORT:-""}" ]] && eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g'\
-            <<< $VPNPORT)
+while read i; do
+    vpnportforward "$i"
+done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
 
 while getopts ":hc:df:m:p:R:r:v:" opt; do
     case "$opt" in

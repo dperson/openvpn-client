@@ -140,8 +140,11 @@ ENVIRONMENT VARIABLES
  * `ROUTE` - As above, add a route to allow replies to your private network
  * `TZ` - Set a timezone, IE `EST5EDT`
  * `VPN` - As above, setup a VPN connection
- * `VPNPORT` - As above, setup port forwarding
+ * `VPNPORT` - As above, setup port forwarding (See NOTE below)
  * `GROUPID` - Set the GID for the vpn
+
+ **NOTE**: optionally supports additional variables starting with the same name,
+ IE `VPNPORT` also will work for `VPNPORT_2`, `VPNPORT_3`... `VPNPORT_x`, etc.
 
 ## Examples
 
