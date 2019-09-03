@@ -33,7 +33,7 @@ the Routing instructions below.
 **NOTE 4**: If you have a VPN service that allows making local services
 available, you'll need to reuse the VPN container's network stack with the
 `--net=container:vpn` (replacing 'vpn' with what you named your instance of this
-container) when you launch the service in it's container.
+container) when you launch the service in its container.
 
 **NOTE 5**: If you need a template for using this container with
 `docker-compose`, see the example
@@ -47,7 +47,7 @@ container) when you launch the service in it's container.
                 -v 'vpn.server.name;username;password'
     sudo docker restart vpn
 
-Once it's up other containers can be started using it's network connection:
+Once it's up other containers can be started using its network connection:
 
     sudo docker run -it --net=container:vpn -d some/docker-container
 
