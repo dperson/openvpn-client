@@ -47,7 +47,7 @@ container) when you launch the service in its container.
                 -v 'vpn.server.name;username;password'
     sudo docker restart vpn
 
-Once it's up other containers can be started using it's network connection:
+Once it's up other containers can be started using its network connection:
 
     sudo docker run -it --net=container:vpn -d some/docker-container
 
