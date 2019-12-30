@@ -41,6 +41,16 @@ container) when you launch the service in its container.
 
 ## Starting an OpenVPN client instance
 
+**If you have a working OpenVPN .ovpn/.conf-file:** 
+    
+    sudo cp /path/to/service.ovpn /some/path/service.ovpn
+    sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
+                -v /some/path:/vpn -d dperson/openvpn-client
+
+Please note that you may only have one .ovpn/.conf-file in /some/path/.
+
+**If you only have an OpenVPN .crt-file:**
+                
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 -v /some/path:/vpn -d dperson/openvpn-client \
