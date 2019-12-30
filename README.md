@@ -207,6 +207,27 @@ get from your VPN. You'll need to add the `--dns` command line option to the
                 --dns 8.8.4.4 -v /some/path:/vpn -d dperson/openvpn-client \
                 -v 'vpn.server.name;username;password'
 
+### Sample docker-compose.yaml
+
+   version: "3"
+
+   services:
+     vpn:
+       container_name: "vpn"
+      environment:
+        TZ: 'Europe/Berlin'
+      volumes:
+        - /some/path:/vpn
+      dns:
+        - 8.8.8.8 
+      cap_add:
+        - NET_ADMIN
+      devices:
+        - '/dev/net/tun'
+      command: -f '' -v 'vpn.server.name;username;password' 
+      image: dperson/openvpn-client 
+      restart: unless-stopped
+
 # User Feedback
 
 ## Issues
