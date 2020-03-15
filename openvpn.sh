@@ -196,10 +196,10 @@ vpnportforward() { local port="$1" protocol="${2:-tcp}"
                 2>/dev/null
     ip6tables -A FORWARD -p $protocol -m $protocol --dport $port -j ACCEPT \
                 2>/dev/null
-    iptables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
+    iptables -t nat -A OUTPUT -i tun0 -p $protocol --dport $port -j DNAT \
                 --to-destination 127.0.0.11:$port
     iptables -A INPUT -p $protocol -m $protocol --dport $port -j ACCEPT
-    iptables -A FORWARD -p $protocol -m $protocol --dport $port -j ACCEPT
+    iptables -A FORWARD -i tun0 -p $protocol -m $protocol --dport $port -j ACCEPT
     echo "Setup forwarded port: $port $protocol"
 }
 
