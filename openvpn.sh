@@ -257,8 +257,12 @@ route6="$dir/.firewall6"
 [[ "${DNS:-""}" ]] && dns
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
 [[ "${FIREWALL:-""}" || -e $route ]] && firewall "${FIREWALL:-""}"
-[[ "${ROUTE6:-""}" ]] && return_route6 "$ROUTE6"
-[[ "${ROUTE:-""}" ]] && return_route "$ROUTE"
+while read i; do
+    return_route6 "$i"
+done < <(env | awk '/^ROUTE6[=_]/ {sub (/^[^=]*=/, "", $0); print}')
+while read i; do
+    return_route "$i"
+done < <(env | awk '/^ROUTE[=_]/ {sub (/^[^=]*=/, "", $0); print}')
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN)
 while read i; do
     vpnportforward "$i"
