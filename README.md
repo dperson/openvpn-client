@@ -197,6 +197,35 @@ get from your VPN. You'll need to add the `--dns` command line option to the
                 --dns 8.8.4.4 -v /some/path:/vpn -d dperson/openvpn-client \
                 -v 'vpn.server.name;username;password'
 
+### Run with client certificates
+
+In case you want to use client certificates you just copy them into the /vpn
+directory.
+
+    sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
+    sudo cp /path/to/client.crt /some/path/client.crt
+    sudo cp /path/to/client.key /some/path/client.key
+    sudo cp /path/to/vpn.conf /some/path/vpn.conf
+    sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
+                -v /some/path:/vpn -d dperson/openvpn-client
+
+The vpn.conf should look like this:
+
+    client
+    dev tun
+    port 1194
+    proto udp
+
+    remote vpn.server.name 1194
+    nobind
+
+    ca /vpn/vpn-ca.crt
+    cert /vpn/client.crt
+    key /vpn/client.key
+
+    persist-key
+    persist-tun
+
 # User Feedback
 
 ## Issues
