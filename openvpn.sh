@@ -188,6 +188,7 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
 ### vpnportforward: setup vpn port forwarding
 # Arguments:
 #   port) forwarded port
+#   protocol) optional protocol (defaults to TCP)
 # Return: configured NAT rule
 vpnportforward() { local port="$1" protocol="${2:-tcp}"
     ip6tables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
@@ -265,7 +266,7 @@ while read i; do
 done < <(env | awk '/^ROUTE[=_]/ {sub (/^[^=]*=/, "", $0); print}')
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN)
 while read i; do
-    vpnportforward "$i"
+    eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $i)
 done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
 
 while getopts ":hc:df:m:p:R:r:v:" opt; do
