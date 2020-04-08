@@ -10,6 +10,8 @@ services:
       TZ: 'EST5EDT'
     networks:
       - default
+    dns:
+      - 8.8.8.8
     read_only: true
     tmpfs:
       - /run
