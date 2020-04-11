@@ -39,6 +39,9 @@ container) when you launch the service in its container.
 `docker-compose`, see the example
 [file](https://github.com/dperson/openvpn-client/raw/master/docker-compose.yml).
 
+**NOTE 6**: If you need IPv6, or the errors really bother you add a
+`--sysctl net.ipv6.conf.all.disable_ipv6=0` to the docker run command.
+
 ## Starting an OpenVPN client instance
 
     sudo cp /path/to/vpn.crt /some/path/vpn-ca.crt
