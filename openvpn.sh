@@ -147,13 +147,14 @@ return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
 #   user) user name on VPN
 #   pass) password on VPN
 #   port) port to connect to VPN (optional)
+#   proto) protocol to connect to VPN (optional)
 # Return: configured .ovpn file
-vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" i \
-            pem="$(\ls $dir/*.pem 2>&-)"
+vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" proto=${5:-udp}\
+            i pem="$(\ls $dir/*.pem 2>&-)"
 
     echo "client" >$conf
     echo "dev tun" >>$conf
-    echo "proto udp" >>$conf
+    echo "proto $proto" >>$conf
     for i in $(sed 's/:/ /g' <<< $server); do
         echo "remote $i $port" >>$conf
     done
@@ -235,7 +236,9 @@ Options (fields in '[]' are optional, '<>' are required):
                 <server> to connect to (multiple servers are separated by :)
                 <user> to authenticate as
                 <password> to authenticate with
-                optional arg: [port] to use, instead of default
+                optional args:
+                [port] to use, instead of default
+                [proto] to use, instead of udp (IE, tcp)
 
 The 'command' (if provided and valid) will be run instead of openvpn
 " >&2

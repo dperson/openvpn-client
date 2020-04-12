@@ -129,7 +129,9 @@ the second container (that's what `--net=container:vpn` does).
                     <server> to connect to (multiple servers are separated by :)
                     <user> to authenticate as
                     <password> to authenticate with
-                    optional arg: [port] to use, instead of default
+                    optional args:
+                    [port] to use, instead of default
+                    [proto] to use, instead of udp (IE, tcp)
 
     The 'command' (if provided and valid) will be run instead of openvpn
 
