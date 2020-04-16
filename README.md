@@ -94,6 +94,7 @@ Running the following on your docker host should give you the correct network:
 
 **NOTE**: if you don't use the `-v` to configure your VPN, then you'll have to
 make sure that `redirect-gateway def1` is set, otherwise routing may not work.
+Or you could use -o option to pass it : `-o '--redirect-gateway def1'`
 
 **NOTE 2**: if you have a port you want to make available, you have to add the
 docker `-p` option to the VPN container. The network stack will be reused by
@@ -115,6 +116,10 @@ the second container (that's what `--net=container:vpn` does).
                     optional arg: [port] to use, instead of default
         -m '<mss>'  Maximum Segment Size <mss>
                     required arg: '<mss>'
+        -o '<args>' Allow to pass any arguments directly to openvpn
+            required arg: '<args>'
+            <args> could be any string matching openvpn arguments
+            i.e '--arg1 value --arg2 value'
         -p '<port>[;protocol]' Forward port <port>
                     required arg: '<port>'
                     optional arg: [protocol] to use instead of default (tcp)
@@ -141,6 +146,7 @@ ENVIRONMENT VARIABLES
  * `DNS` - As above, Use the VPN provider's DNS resolvers
  * `FIREWALL` - As above, setup firewall to disallow net access w/o the VPN
  * `MSS` - As above, set Maximum Segment Size
+ * `OTHER_ARGS` - As above, pass arguments directly to openvpn
  * `ROUTE6` - As above, add a route to allow replies to your internal network
  * `ROUTE` - As above, add a route to allow replies to your private network
  * `TZ` - Set a timezone, IE `EST5EDT`
