@@ -141,6 +141,15 @@ return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
     [[ -e $route ]] && grep -q "^$network\$" $route || echo "$network" >>$route
 }
 
+### vpn_files: specify configuration and cert files
+# Arguments:
+#   conf) openvpn configuration file
+#   cert) cert file with ca
+vpn_files() {
+    [[ "${1:-}" ]] && conf="$dir/$1"
+    [[ "${2:-}" ]] && cert="$dir/$2"
+}
+
 ### vpn: setup openvpn client
 # Arguments:
 #   server) VPN GW server
@@ -240,6 +249,11 @@ Options (fields in '[]' are optional, '<>' are required):
                 optional args:
                 [port] to use, instead of default
                 [proto] to use, instead of udp (IE, tcp)
+    -V '<[conf];[cert]>' Specify OpenVPN configuration and cert file
+                required arg: ';'
+                optional args:
+                [conf] file inside /vpn to use for openvpn configuration
+                [cert] file inside /vpn to use as cert file with ca
 
 The 'command' (if provided and valid) will be run instead of openvpn
 " >&2
@@ -273,7 +287,7 @@ while read i; do
     eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $i)
 done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
 
-while getopts ":hc:df:m:p:R:r:v:" opt; do
+while getopts ":hc:df:m:p:R:r:v:V:" opt; do
     case "$opt" in
         h) usage ;;
         c) cert_auth "$OPTARG" ;;
@@ -284,6 +298,7 @@ while getopts ":hc:df:m:p:R:r:v:" opt; do
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
         v) eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
+        V) eval vpn_files $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
         "?") echo "Unknown option: -$OPTARG"; usage 1 ;;
         ":") echo "No argument value for option: -$OPTARG"; usage 2 ;;
     esac

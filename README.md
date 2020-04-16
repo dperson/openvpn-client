@@ -132,6 +132,11 @@ the second container (that's what `--net=container:vpn` does).
                     optional args:
                     [port] to use, instead of default
                     [proto] to use, instead of udp (IE, tcp)
+        -V '<[conf];[cert]>' Specify OpenVPN configuration and cert file
+            required arg: ';'
+            optional args:
+            [conf] file inside /vpn to use for openvpn configuration
+            [cert] file inside /vpn to use as cert file with ca
 
     The 'command' (if provided and valid) will be run instead of openvpn
 
@@ -180,6 +185,16 @@ Or you can store it in the container:
                 -v 'vpn.server.name;username;password' tee /vpn/vpn-ca.crt \
                 >/dev/null
     sudo docker restart vpn
+
+### VPN select configuration files
+
+All files must be specified relative to `/vpn`
+
+    ls /some/path/myown-ca.crt
+    ls /some/path/myovpn.ovpn
+    sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
+                -v /some/path:/vpn -d dperson/openvpn-client \
+                -V 'myovpn.ovpn;myown-ca.crt'
 
 ### Firewall
 
