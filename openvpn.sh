@@ -141,6 +141,18 @@ return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
     [[ -e $route ]] && grep -q "^$network\$" $route || echo "$network" >>$route
 }
 
+### vpn_auth: configure authentication username and password
+# Arguments:
+#   user) user name on VPN
+#   pass) password on VPN
+# Return: configured auth file
+vpn_auth() { local user="$1" pass="$2"
+
+    echo "$user" >$auth
+    echo "$pass" >>$auth
+    chmod 0600 $auth
+}
+
 ### vpn: setup openvpn client
 # Arguments:
 #   server) VPN GW server
@@ -217,6 +229,7 @@ Options (fields in '[]' are optional, '<>' are required):
     -c '<passwd>' Configure an authentication password to open the cert
                 required arg: '<passwd>'
                 <passwd> password to access the certificate file
+    -a '<user;password>' Configure authentication username and password
     -d          Use the VPN provider's DNS resolvers
     -f '[port]' Firewall rules so that only the VPN and DNS are allowed to
                 send internet traffic (IE if VPN is down it's offline)
@@ -262,6 +275,7 @@ route6="$dir/.firewall6"
 [[ -f $cert ]] || { [[ $(ls -d $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 \
             ]] && cert="$(ls -d $dir/* | egrep '\.ce?rt$' 2>&-)"; }
 
+[[ "${VPN_AUTH:-""}" ]] && eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN_AUTH)
 [[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
 [[ "${DNS:-""}" ]] && dns
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
@@ -277,9 +291,11 @@ while read i; do
     eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $i)
 done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
 
-while getopts ":hc:df:m:o:p:R:r:v:" opt; do
+while getopts ":hc:df:a:m:o:p:R:r:v:" opt; do
     case "$opt" in
         h) usage ;;
+        a) eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG)
+           AUTH_COMMAND="--auth-user-pass $auth" ;;
         c) cert_auth "$OPTARG" ;;
         d) dns ;;
         f) firewall "$OPTARG"; touch $route $route6 ;;
@@ -308,6 +324,6 @@ else
     [[ -e $conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
     [[ -e $cert ]] || grep -Eq '^ *(<ca>|ca +)' $conf ||
         { echo "ERROR: VPN CA cert missing!"; sleep 120; }
-    exec sg vpn -c "openvpn --cd $dir --config $conf ${OTHER_ARGS:-} \
-                ${MSS:+--fragment $MSS --mssfix}"
+    exec sg vpn -c "openvpn --cd $dir --config $conf ${AUTH_COMMAND:-} \
+               ${OTHER_ARGS:-} ${MSS:+--fragment $MSS --mssfix}"
 fi

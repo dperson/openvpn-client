@@ -110,6 +110,7 @@ the second container (that's what `--net=container:vpn` does).
         -c '<passwd>' Configure an authentication password to open the cert
                     required arg: '<passwd>'
                     <passwd> password to access the certificate file
+        -a '<user;password>' Configure authentication username and password
         -d          Use the VPN provider's DNS resolvers
         -f '[port]' Firewall rules so that only the VPN and DNS are allowed to
                     send internet traffic (IE if VPN is down it's offline)
@@ -153,6 +154,7 @@ ENVIRONMENT VARIABLES
  * `ROUTE` - As above (-r) add a route to allow replies to your private network
  * `TZ` - Set a timezone, IE `EST5EDT`
  * `VPN` - As above (-v) setup a VPN connection
+ * `VPN_AUTH` - As above (-a) provide authentication to vpn server
  * `VPNPORT` - As above (-p) setup port forwarding (See NOTE below)
  * `GROUPID` - Set the GID for the vpn
 
@@ -240,6 +242,14 @@ The vpn.conf should look like this:
 
     persist-key
     persist-tun
+
+### Run with openvpn client configuration and provided auth
+
+In case you want to use your client configuration in /vpn named vpn.conf 
+but adding your vpn user and password by command line
+
+    sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
+            -v /some/path:/vpn -d dperson/openvpn-client -a 'username;password'
 
 # User Feedback
 
