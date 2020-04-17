@@ -142,16 +142,18 @@ the second container (that's what `--net=container:vpn` does).
 
 ENVIRONMENT VARIABLES
 
- * `CERT_AUTH` - As above, provide authentication to access certificate
- * `DNS` - As above, Use the VPN provider's DNS resolvers
- * `FIREWALL` - As above, setup firewall to disallow net access w/o the VPN
- * `MSS` - As above, set Maximum Segment Size
- * `OTHER_ARGS` - As above, pass arguments directly to openvpn
- * `ROUTE6` - As above, add a route to allow replies to your internal network
- * `ROUTE` - As above, add a route to allow replies to your private network
+ * `CERT_AUTH` - As above (-c) provide authentication to access certificate
+ * `DNS` - As above (-d) use the VPN provider's DNS resolvers
+ * `FIREWALL` - As above (-f) setup firewall to disallow net access w/o the VPN
+ * `CIPHER` - Set openvpn cipher option when generating conf file with -v
+ * `AUTH` - Set openvpn auth option when generating conf file with -v
+ * `MSS` - As above (-m) set Maximum Segment Size
+ * `OTHER_ARGS` - As above (-o) pass arguments directly to openvpn
+ * `ROUTE6` - As above (-R) add a route to allow replies to your private network
+ * `ROUTE` - As above (-r) add a route to allow replies to your private network
  * `TZ` - Set a timezone, IE `EST5EDT`
- * `VPN` - As above, setup a VPN connection
- * `VPNPORT` - As above, setup port forwarding (See NOTE below)
+ * `VPN` - As above (-v) setup a VPN connection
+ * `VPNPORT` - As above (-p) setup port forwarding (See NOTE below)
  * `GROUPID` - Set the GID for the vpn
 
  **NOTE**: optionally supports additional variables starting with the same name,
@@ -170,6 +172,8 @@ Any of the commands can be run at creation with `docker run` or later with
                 -v 'vpn.server.name;username;password'
 
 ### VPN configuration
+
+**NOTE**: When using `-v` a vpn configuration is generated.
 
 In order to work you must provide VPN configuration and the certificate. You can
 use external storage for `/vpn`:
