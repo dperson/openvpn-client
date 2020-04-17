@@ -223,6 +223,10 @@ Options (fields in '[]' are optional, '<>' are required):
                 optional arg: [port] to use, instead of default
     -m '<mss>'  Maximum Segment Size <mss>
                 required arg: '<mss>'
+    -o '<args>' Allow to pass any arguments directly to openvpn
+                required arg: '<args>'
+                <args> could be any string matching openvpn arguments
+                i.e '--arg1 value --arg2 value'
     -p '<port>[;protocol]' Forward port <port>
                 required arg: '<port>'
                 optional arg: [protocol] to use instead of default (tcp)
@@ -273,13 +277,14 @@ while read i; do
     eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $i)
 done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
 
-while getopts ":hc:df:m:p:R:r:v:" opt; do
+while getopts ":hc:df:m:o:p:R:r:v:" opt; do
     case "$opt" in
         h) usage ;;
         c) cert_auth "$OPTARG" ;;
         d) dns ;;
         f) firewall "$OPTARG"; touch $route $route6 ;;
         m) MSS="$OPTARG" ;;
+        o) OTHER_ARGS="$OPTARG" ;;
         p) eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
@@ -303,6 +308,6 @@ else
     [[ -e $conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
     [[ -e $cert ]] || grep -Eq '^ *(<ca>|ca +)' $conf ||
         { echo "ERROR: VPN CA cert missing!"; sleep 120; }
-    exec sg vpn -c "openvpn --cd $dir --config $conf \
+    exec sg vpn -c "openvpn --cd $dir --config $conf ${OTHER_ARGS:-} \
                 ${MSS:+--fragment $MSS --mssfix}"
 fi
