@@ -272,8 +272,9 @@ route6="$dir/.firewall6"
 [[ -f $cert ]] || { [[ $(ls -d $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 \
             ]] && cert="$(ls -d $dir/* | egrep '\.ce?rt$' 2>&-)"; }
 
-[[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
-[[ "${DNS:-""}" ]] && dns
+
+[[ "${CERT_AUTH:-""}" ]] && do_cert_auth="$CERT_AUTH"
+[[ "${DNS:-""}" ]] && do_dns="1"
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
 [[ "${FIREWALL:-""}" || -e $route ]] && firewall "${FIREWALL:-""}"
 while read i; do
@@ -290,7 +291,7 @@ done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
 while getopts ":hc:df:m:p:R:r:v:V:" opt; do
     case "$opt" in
         h) usage ;;
-        c) cert_auth "$OPTARG" ;;
+        c) do_cert_auth="$OPTARG" ;;
         d) dns ;;
         f) firewall "$OPTARG"; touch $route $route6 ;;
         m) MSS="$OPTARG" ;;
@@ -304,6 +305,10 @@ while getopts ":hc:df:m:p:R:r:v:V:" opt; do
     esac
 done
 shift $(( OPTIND - 1 ))
+
+[[ "${do_dns:-""}" ]] || dns
+[[ "${do_cert_auth:-""}" ]] || cert_auth "${do_cert_auth}"
+
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
