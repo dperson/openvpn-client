@@ -141,6 +141,16 @@ return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
     [[ -e $route ]] && grep -q "^$network\$" $route || echo "$network" >>$route
 }
 
+
+### vpn_files: specify configuration and cert files
+# Arguments:
+#   conf) openvpn configuration file
+#   cert) cert file with ca
+vpn_files() {
+    [[ "${1:-}" ]] && conf="$dir/$1"
+    [[ "${2:-}" ]] && cert="$dir/$2"
+}
+
 ### vpn_auth: configure authentication username and password
 # Arguments:
 #   user) user name on VPN
@@ -304,7 +314,8 @@ while read i; do
     eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $i)
 done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
 
-while getopts ":hc:df:a:m:p:R:r:v:V:" opt; do
+
+while getopts ":hc:df:a:m:o:p:R:r:v:V:" opt; do
     case "$opt" in
         h) usage ;;
         a) eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG)
@@ -328,7 +339,6 @@ shift $(( OPTIND - 1 ))
 [[ "${do_dns:-""}" ]] || dns
 [[ "${do_cert_auth:-""}" ]] || cert_auth "${do_cert_auth}"
 
-
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
 elif [[ $# -ge 1 ]]; then
@@ -343,5 +353,5 @@ else
     [[ -e $cert ]] || grep -Eq '^ *(<ca>|ca +)' $conf ||
         { echo "ERROR: VPN CA cert missing!"; sleep 120; }
     exec sg vpn -c "openvpn --cd $dir --config $conf ${AUTH_COMMAND:-} \
-                ${OTHER_ARGS:-} ${MSS:+--fragment $MSS --mssfix}"
+               ${OTHER_ARGS:-} ${MSS:+--fragment $MSS --mssfix}"
 fi
