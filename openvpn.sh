@@ -147,7 +147,6 @@ return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
 #   pass) password on VPN
 # Return: configured auth file
 vpn_auth() { local user="$1" pass="$2"
-
     echo "$user" >$auth
     echo "$pass" >>$auth
     chmod 0600 $auth
@@ -158,7 +157,11 @@ vpn_auth() { local user="$1" pass="$2"
 #   conf) openvpn configuration file
 #   cert) cert file with ca
 vpn_files() {
-    [[ "${1:-}" ]] && conf="$dir/$1"
+    if [[ "${1:-}" ]]; then
+        if [[ -f "$dir/$1" ]]; then
+            cp -f "$dir/$1" "$conf"
+        fi
+    fi
     [[ "${2:-}" ]] && cert="$dir/$2"
 }
 
@@ -326,8 +329,8 @@ while getopts ":hc:df:a:m:o:p:R:r:v:V:" opt; do
 done
 shift $(( OPTIND - 1 ))
 
-[[ "${do_dns:-""}" ]] || dns
-[[ "${do_cert_auth:-""}" ]] || cert_auth "${do_cert_auth}"
+[[ "${do_dns:-""}" ]] && dns
+[[ "${do_cert_auth:-""}" ]] && cert_auth "${do_cert_auth}"
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
