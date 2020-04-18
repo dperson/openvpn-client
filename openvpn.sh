@@ -312,7 +312,7 @@ while getopts ":hc:df:a:m:o:p:R:r:v:V:" opt; do
         a) eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG)
            AUTH_COMMAND="--auth-user-pass $auth" ;;
         c) do_cert_auth="$OPTARG" ;;
-        d) dns ;;
+        d) do_dns="1" ;;
         f) firewall "$OPTARG"; touch $route $route6 ;;
         m) MSS="$OPTARG" ;;
         o) OTHER_ARGS="$OPTARG" ;;
