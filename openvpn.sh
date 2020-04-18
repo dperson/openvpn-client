@@ -306,6 +306,7 @@ while read i; do
     eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $i)
 done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
 
+
 while getopts ":hc:df:a:m:o:p:R:r:v:V:" opt; do
     case "$opt" in
         h) usage ;;
