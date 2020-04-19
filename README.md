@@ -138,7 +138,7 @@ the second container (that's what `--net=container:vpn` does).
                     optional args:
                     [port] to use, instead of default
                     [proto] to use, instead of udp (IE, tcp)
-        -V '<[conf][;cert]>' Specify OpenVPN configuration and cert file
+        -V '<[conf][;cert]>' Specify OpenVPN configuration and ca cert file
                     required arg:
                     optional args:
                     [conf] file inside /vpn to use for openvpn configuration
@@ -159,6 +159,7 @@ ENVIRONMENT VARIABLES
  * `ROUTE` - As above (-r) add a route to allow replies to your private network
  * `TZ` - Set a timezone, IE `EST5EDT`
  * `VPN` - As above (-v) setup a VPN connection
+ * `VPN_FILES` - As above (-V) specify configuration and ca cert file
  * `VPN_AUTH` - As above (-a) provide authentication to vpn server
  * `VPNPORT` - As above (-p) setup port forwarding (See NOTE below)
  * `GROUPID` - Set the GID for the vpn

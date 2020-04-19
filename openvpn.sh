@@ -304,6 +304,7 @@ while read i; do
     return_route "$i"
 done < <(env | awk '/^ROUTE[=_]/ {sub (/^[^=]*=/, "", $0); print}')
 [[ "${VPN:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN)
+[[ "${VPN_FILES:-""}" ]] && eval vpn_files $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN_FILES)
 while read i; do
     eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $i)
 done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
