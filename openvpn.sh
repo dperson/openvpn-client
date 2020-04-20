@@ -275,6 +275,7 @@ route6="$dir/.firewall6"
 [[ -f $cert ]] || { [[ $(ls -d $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 \
             ]] && cert="$(ls -d $dir/* | egrep '\.ce?rt$' 2>&-)"; }
 
+
 if [[ "${VPN_AUTH:-""}" ]]; then
     eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN_AUTH)
     AUTH_COMMAND="--auth-user-pass $auth"
