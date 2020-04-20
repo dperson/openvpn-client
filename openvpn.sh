@@ -24,6 +24,7 @@ set -o nounset                              # Treat unset variables as an error
 # Return: conf file that supports certificate authentication
 cert_auth() { local passwd="$1"
     grep -q "^${passwd}\$" $cert_auth || {
+        cert_auth="/tmp/vpn.cert_auth"
         echo "$passwd" >$cert_auth
     }
     chmod 0600 $cert_auth
@@ -124,7 +125,7 @@ return_route6() { local network="$1" gw="$(ip -6 route |
     ip6tables -A FORWARD -d $network -j ACCEPT 2>/dev/null
     ip6tables -A FORWARD -s $network -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -d $network -j ACCEPT 2>/dev/null
-    [[ -e $route6 ]] &&grep -q "^$network\$" $route6 ||echo "$network" >>$route6
+    [[ -e $route6 ]] && grep -q "^$network\$" $route6 || echo "$network" >>$route6
 }
 
 ### return_route: add a route back to your network, so that return traffic works
@@ -147,6 +148,7 @@ return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
 #   pass) password on VPN
 # Return: configured auth file
 vpn_auth() { local user="$1" pass="$2"
+    auth="/tmp/vpn.auth"
     echo "$user" >$auth
     echo "$pass" >>$auth
     chmod 0600 $auth
@@ -159,10 +161,16 @@ vpn_auth() { local user="$1" pass="$2"
 vpn_files() {
     if [[ "${1:-}" ]]; then
         if [[ -f "$dir/$1" ]]; then
+            conf="/tmp/vpn.conf"
             cp -f "$dir/$1" "$conf"
         fi
     fi
-    [[ "${2:-}" ]] && cert="$dir/$2"
+    if [[ "${2:-}" ]]; then
+        if [[ -f "$dir/$2" ]]; then
+            cert="/tmp/vpn-ca.crt"
+            cp -f "$dir/$2" "$cert"
+        fi
+    fi
 }
 
 ### vpn: setup openvpn client
@@ -175,6 +183,9 @@ vpn_files() {
 # Return: configured .ovpn file
 vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" proto=${5:-udp}\
             i pem="$(\ls $dir/*.pem 2>&-)"
+
+    conf="/tmp/vpn.conf"
+    auth="/tmp/vpn.auth"
 
     echo "client" >$conf
     echo "dev tun" >>$conf
@@ -199,7 +210,7 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" proto=${5:-udp}\
     echo "redirect-gateway def1" >>$conf
     echo "disable-occ" >>$conf
     echo "fast-io" >>$conf
-    echo "ca $cert" >>$conf
+    [[ -e $cert ]] && echo "ca $cert" >>$conf
     [[ $(wc -w <<< $pem) -eq 1 ]] && echo "crl-verify $pem" >>$conf
 
     echo "$user" >$auth
@@ -303,7 +314,7 @@ done < <(env | awk '/^ROUTE6[=_]/ {sub (/^[^=]*=/, "", $0); print}')
 while read i; do
     return_route "$i"
 done < <(env | awk '/^ROUTE[=_]/ {sub (/^[^=]*=/, "", $0); print}')
-[[ "${VPN:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN)
+[[ "${VPN:-""}" ]] && do_vpn="$VPN"
 [[ "${VPN_FILES:-""}" ]] && eval vpn_files $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN_FILES)
 while read i; do
     eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $i)
@@ -322,7 +333,7 @@ while getopts ":hc:df:a:m:o:p:R:r:v:V:" opt; do
         p) eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
-        v) eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
+        v) do_vpn="$OPTARG" ;;
         V) eval vpn_files $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
         "?") echo "Unknown option: -$OPTARG"; usage 1 ;;
         ":") echo "No argument value for option: -$OPTARG"; usage 2 ;;
@@ -330,6 +341,7 @@ while getopts ":hc:df:a:m:o:p:R:r:v:V:" opt; do
 done
 shift $(( OPTIND - 1 ))
 
+[[ "${do_vpn:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< ${do_vpn})
 [[ "${do_dns:-""}" ]] && dns
 [[ "${do_cert_auth:-""}" ]] && cert_auth "${do_cert_auth}"
 
@@ -343,9 +355,13 @@ elif ps -ef | egrep -v 'grep|openvpn.sh' | grep -q openvpn; then
 else
     mkdir -p /dev/net
     [[ -c /dev/net/tun ]] || mknod -m 0666 /dev/net/tun c 10 200
-    [[ -e $conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
+    [[ -e $conf ]] || { echo "ERROR: VPN not configured!"; sleep 10; exit 1;}
     [[ -e $cert ]] || grep -Eq '^ *(<ca>|ca +)' $conf ||
-        { echo "ERROR: VPN CA cert missing!"; sleep 120; }
+        { echo "ERROR: VPN CA cert missing!"; sleep 10; exit 1;}
+    echo "INFO: Files used"
+    echo "auth : $auth - cert_auth : $cert_auth - conf : $conf - cert : $cert - route : $route route6 : $route6"
+    echo LAUNCH: exec sg vpn -c "openvpn --cd $dir --config $conf ${AUTH_COMMAND:-} \
+               ${OTHER_ARGS:-} ${MSS:+--fragment $MSS --mssfix}"
     exec sg vpn -c "openvpn --cd $dir --config $conf ${AUTH_COMMAND:-} \
                ${OTHER_ARGS:-} ${MSS:+--fragment $MSS --mssfix}"
 fi

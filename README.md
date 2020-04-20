@@ -203,11 +203,27 @@ Or you can store it in the container:
 
 All files must be specified relative to `/vpn`
 
+Full configuration with vpn conf and cert ca file provided
+
     ls /some/path/myown-ca.crt
     ls /some/path/myovpn.ovpn
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
-                -v /some/path:/vpn -d dperson/openvpn-client \
+                -v /some/path:/vpn 
+                -e TZ=Europe/London -e DNS=1 -e "OTHER_ARGS=--redirect-gateway def1"
+                dperson/openvpn-client \
                 -V 'myovpn.ovpn;myown-ca.crt'
+
+
+Full configuration with only cert ca file provided. VPN conf will be generated
+
+    ls /some/path/myown-ca.crt
+    sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
+            -v /some/path:/vpn \
+            -e TZ=Europe/London -e DNS=1 -e "OTHER_ARGS=--redirect-gateway def1"
+            dperson/openvpn \
+            -v 'vpn.server.name;username;password'
+            -V ';myown-ca.crt'
+
 
 ### Firewall
 
@@ -229,6 +245,10 @@ get from your VPN. You'll need to add the `--dns` command line option to the
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 --dns 8.8.4.4 -v /some/path:/vpn -d dperson/openvpn-client \
                 -v 'vpn.server.name;username;password'
+
+### Use DNS of VPN Provider
+
+If you want to use dns server from your VPN provider use openvpn.sh `-d` or `DNS` env var
 
 ### Run with client certificates
 
@@ -261,11 +281,13 @@ The vpn.conf should look like this:
 
 ### Run with openvpn client configuration and provided auth
 
-In case you want to use your client configuration in /vpn named vpn.conf 
-but adding your vpn user and password by command line
+In case you want to use your own client configuration in /vpn named by default
+vpn.conf but adding your vpn user and password by command line
 
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
             -v /some/path:/vpn -d dperson/openvpn-client -a 'username;password'
+
+
 
 # User Feedback
 
