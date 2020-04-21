@@ -152,6 +152,8 @@ vpn_auth() { local user="$1" pass="$2"
     echo "$user" >$auth
     echo "$pass" >>$auth
     chmod 0600 $auth
+
+    export AUTH_COMMAND="--auth-user-pass $auth"
 }
 
 ### vpn_files: specify configuration and cert files
