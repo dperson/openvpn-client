@@ -154,6 +154,23 @@ vpn_auth() { local user="$1" pass="$2"
     export AUTH_COMMAND="--auth-user-pass $auth"
 }
 
+### vpn_files: specify configuration and cert files
+# Arguments:
+#   conf) openvpn configuration file
+#   cert) cert file with ca
+vpn_files() {
+    if [[ "${1:-}" ]]; then
+        if [[ -f "$dir/$1" ]]; then
+            cp -f "$dir/$1" "$conf"
+        fi
+    fi
+    if [[ "${2:-}" ]]; then
+        if [[ -f "$dir/$2" ]]; then
+            cp -f "$dir/$2" "$cert"
+        fi
+    fi
+}
+
 ### vpn: setup openvpn client
 # Arguments:
 #   server) VPN GW server
@@ -188,7 +205,7 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" proto=${5:-udp}\
     echo "redirect-gateway def1" >>$conf
     echo "disable-occ" >>$conf
     echo "fast-io" >>$conf
-    echo "ca $cert" >>$conf
+    [[ -e $cert ]] && echo "ca $cert" >>$conf
     [[ $(wc -w <<< $pem) -eq 1 ]] && echo "crl-verify $pem" >>$conf
 
     echo "$user" >$auth
@@ -258,6 +275,11 @@ Options (fields in '[]' are optional, '<>' are required):
                 optional args:
                 [port] to use, instead of default
                 [proto] to use, instead of udp (IE, tcp)
+    -V '<[conf][;cert]>' Specify OpenVPN configuration and cert file
+                required arg:
+                optional args:
+                [conf] file inside /vpn to use for openvpn configuration
+                [cert] file inside /vpn to use as cert file with ca
 
 The 'command' (if provided and valid) will be run instead of openvpn
 " >&2
@@ -276,41 +298,48 @@ route6="$dir/.firewall6"
 [[ -f $cert ]] || { [[ $(ls -d $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 \
             ]] && cert="$(ls -d $dir/* | egrep '\.ce?rt$' 2>&-)"; }
 
-[[ "${VPN_AUTH:-""}" ]] && eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< \
+[[ "${VPN_AUTH:-""}" ]] && eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< \ 
             $VPN_AUTH)
-[[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
-[[ "${DNS:-""}" ]] && dns
+[[ "${CERT_AUTH:-""}" ]] && do_cert_auth="$CERT_AUTH"
+[[ "${DNS:-""}" ]] && do_dns="1"
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
-[[ "${FIREWALL:-""}" || -e $route ]] && firewall "${FIREWALL:-""}"
+[[ "${FIREWALL:-""}" || -e $route ]] && do_firewall="${FIREWALL:-""}"
 while read i; do
     return_route6 "$i"
 done < <(env | awk '/^ROUTE6[=_]/ {sub (/^[^=]*=/, "", $0); print}')
 while read i; do
     return_route "$i"
 done < <(env | awk '/^ROUTE[=_]/ {sub (/^[^=]*=/, "", $0); print}')
-[[ "${VPN:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN)
+[[ "${VPN:-""}" ]] && do_vpn="$VPN"
+[[ "${VPN_FILES:-""}" ]] && eval vpn_files $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN_FILES)
 while read i; do
     eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $i)
 done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
 
-while getopts ":hc:df:a:m:o:p:R:r:v:" opt; do
+while getopts ":hc:df:a:m:o:p:R:r:v:V:" opt; do
     case "$opt" in
         h) usage ;;
         a) eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
-        c) cert_auth "$OPTARG" ;;
-        d) dns ;;
-        f) firewall "$OPTARG"; touch $route $route6 ;;
+        c) do_cert_auth="$OPTARG" ;;
+        d) do_dns="1" ;;
+        f) do_firewall="$OPTARG"; touch $route $route6 ;;
         m) MSS="$OPTARG" ;;
         o) OTHER_ARGS="$OPTARG" ;;
         p) eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
-        v) eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
+        v) do_vpn="$OPTARG" ;;
+        V) eval vpn_files $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
         "?") echo "Unknown option: -$OPTARG"; usage 1 ;;
         ":") echo "No argument value for option: -$OPTARG"; usage 2 ;;
     esac
 done
 shift $(( OPTIND - 1 ))
+
+[[ "${do_vpn:-""}" ]] && eval vpn $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< ${do_vpn})
+[[ "${do_firewall:-""}" ]] && firewall "${do_firewall}"
+[[ "${do_dns:-""}" ]] && dns
+[[ "${do_cert_auth:-""}" ]] && cert_auth "${do_cert_auth}"
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
@@ -325,6 +354,8 @@ else
     [[ -e $conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
     [[ -e $cert ]] || grep -Eq '^ *(<ca>|ca +)' $conf ||
         { echo "ERROR: VPN CA cert missing!"; sleep 120; }
+    echo "INFO: Files used"
+    echo "INFO: auth : $auth - cert_auth : $cert_auth - conf : $conf - cert : $cert - route : $route route6 : $route6"
     exec sg vpn -c "openvpn --cd $dir --config $conf ${AUTH_COMMAND:-} \
                ${OTHER_ARGS:-} ${MSS:+--fragment $MSS --mssfix}"
 fi

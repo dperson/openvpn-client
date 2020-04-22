@@ -138,6 +138,11 @@ the second container (that's what `--net=container:vpn` does).
                     optional args:
                     [port] to use, instead of default
                     [proto] to use, instead of udp (IE, tcp)
+        -V '<[conf][;cert]>' Specify OpenVPN configuration and ca cert file
+                    required arg:
+                    optional args:
+                    [conf] file inside /vpn to use for openvpn configuration
+                    [cert] file inside /vpn to use as cert file with ca
 
     The 'command' (if provided and valid) will be run instead of openvpn
 
@@ -154,6 +159,7 @@ ENVIRONMENT VARIABLES
  * `ROUTE` - As above (-r) add a route to allow replies to your private network
  * `TZ` - Set a timezone, IE `EST5EDT`
  * `VPN` - As above (-v) setup a VPN connection
+* `VPN_FILES` - As above (-V) specify configuration and ca cert file
  * `VPN_AUTH` - As above (-a) provide authentication to vpn server
  * `VPNPORT` - As above (-p) setup port forwarding (See NOTE below)
  * `GROUPID` - Set the GID for the vpn
@@ -192,6 +198,32 @@ Or you can store it in the container:
                 -v 'vpn.server.name;username;password' tee /vpn/vpn-ca.crt \
                 >/dev/null
     sudo docker restart vpn
+
+### VPN select configuration files
+
+All files must be specified relative to `/vpn`
+
+Full configuration with vpn conf and cert ca file provided
+
+    ls /some/path/myown-ca.crt
+    ls /some/path/myovpn.ovpn
+    sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
+                -v /some/path:/vpn 
+                -e TZ=EST5EDT -e DNS=1 -e "OTHER_ARGS=--redirect-gateway def1"
+                dperson/openvpn-client \
+                -V 'myovpn.ovpn;myown-ca.crt'
+
+
+Full configuration with only cert ca file provided. VPN conf will be generated
+
+    ls /some/path/myown-ca.crt
+    sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
+            -v /some/path:/vpn \
+            -e TZ=EST5EDT -e DNS=1 -e "OTHER_ARGS=--redirect-gateway def1"
+            dperson/openvpn \
+            -v 'vpn.server.name;username;password'
+            -V ';myown-ca.crt'
+
 
 ### Firewall
 
@@ -246,7 +278,7 @@ The vpn.conf should look like this:
 ### Run with openvpn client configuration and provided auth
 
 In case you want to use your client configuration in /vpn named vpn.conf
-but adding your vpn user and password by command line
+by default but adding your vpn user and password by command line
 
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
             -v /some/path:/vpn -d dperson/openvpn-client -a 'username;password'
