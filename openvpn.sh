@@ -161,11 +161,13 @@ vpn_auth() { local user="$1" pass="$2"
 vpn_files() {
     if [[ "${1:-}" ]]; then
         if [[ -f "$dir/$1" ]]; then
+            conf="/tmp/vpn.conf"
             cp -f "$dir/$1" "$conf"
         fi
     fi
     if [[ "${2:-}" ]]; then
         if [[ -f "$dir/$2" ]]; then
+            cert="/tmp/vpn-ca.crt"
             cp -f "$dir/$2" "$cert"
         fi
     fi
