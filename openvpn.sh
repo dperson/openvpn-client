@@ -24,6 +24,7 @@ set -o nounset                              # Treat unset variables as an error
 # Return: conf file that supports certificate authentication
 cert_auth() { local passwd="$1"
     grep -q "^${passwd}\$" $cert_auth || {
+        cert_auth="/tmp/vpn.cert_auth"
         echo "$passwd" >$cert_auth
     }
     chmod 0600 $cert_auth
@@ -147,6 +148,7 @@ return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
 #   pass) password on VPN
 # Return: configured auth file
 vpn_auth() { local user="$1" pass="$2"
+    auth="/tmp/vpn.auth"
     echo "$user" >$auth
     echo "$pass" >>$auth
     chmod 0600 $auth
@@ -164,6 +166,9 @@ vpn_auth() { local user="$1" pass="$2"
 # Return: configured .ovpn file
 vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" proto=${5:-udp}\
             i pem="$(\ls $dir/*.pem 2>&-)"
+
+    conf="/tmp/vpn.conf"
+    auth="/tmp/vpn.auth"
 
     echo "client" >$conf
     echo "dev tun" >>$conf
@@ -271,6 +276,8 @@ conf="$dir/vpn.conf"
 cert="$dir/vpn-ca.crt"
 route="$dir/.firewall"
 route6="$dir/.firewall6"
+[[ -e $route ]] || route="/tmp/.firewall"
+[[ -e $route6 ]] || route="/tmp/.firewall6"
 [[ -f $conf ]] || { [[ $(ls -d $dir/*|egrep '\.(conf|ovpn)$' 2>&-|wc -w) -eq 1 \
             ]] && conf="$(ls -d $dir/* | egrep '\.(conf|ovpn)$' 2>&-)"; }
 [[ -f $cert ]] || { [[ $(ls -d $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 \
