@@ -144,7 +144,7 @@ the second container (that's what `--net=container:vpn` does).
 ENVIRONMENT VARIABLES
 
  * `CERT_AUTH` - As above (-c) provide authentication to access certificate
- * `DNS` - As above (-d) use the VPN provider's DNS resolvers
+ * `DNS` - As above (-d) use the VPN provider's DNS resolvers (i.e `DNS=1`)
  * `FIREWALL` - As above (-f) setup firewall to disallow net access w/o the VPN
  * `CIPHER` - Set openvpn cipher option when generating conf file with -v
  * `AUTH` - Set openvpn auth option when generating conf file with -v
@@ -213,6 +213,10 @@ get from your VPN. You'll need to add the `--dns` command line option to the
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 --dns 8.8.4.4 -v /some/path:/vpn -d dperson/openvpn-client \
                 -v 'vpn.server.name;username;password'
+### Use DNS of VPN Provider
+
+If you want to use dns server from your VPN provider use openvpn.sh `-d` or `DNS=1`
+env var
 
 ### Run with client certificates
 
