@@ -322,9 +322,9 @@ elif ps -ef | egrep -v 'grep|openvpn.sh' | grep -q openvpn; then
 else
     mkdir -p /dev/net
     [[ -c /dev/net/tun ]] || mknod -m 0666 /dev/net/tun c 10 200
-    [[ -e $conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
+    [[ -e $conf ]] || { echo "ERROR: VPN not configured!"; sleep 10; exit 1;}
     [[ -e $cert ]] || grep -Eq '^ *(<ca>|ca +)' $conf ||
-        { echo "ERROR: VPN CA cert missing!"; sleep 120; }
+        { echo "ERROR: VPN CA cert missing!"; sleep 10; exit 1;}
     exec sg vpn -c "openvpn --cd $dir --config $conf ${AUTH_COMMAND:-} \
                ${OTHER_ARGS:-} ${MSS:+--fragment $MSS --mssfix}"
 fi
