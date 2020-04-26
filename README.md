@@ -245,7 +245,7 @@ The vpn.conf should look like this:
 
 ### Run with openvpn client configuration and provided auth
 
-In case you want to use your client configuration in /vpn named vpn.conf 
+In case you want to use your client configuration in /vpn named vpn.conf
 but adding your vpn user and password by command line
 
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \

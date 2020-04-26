@@ -147,10 +147,11 @@ return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
 #   pass) password on VPN
 # Return: configured auth file
 vpn_auth() { local user="$1" pass="$2"
-
     echo "$user" >$auth
     echo "$pass" >>$auth
     chmod 0600 $auth
+
+    export AUTH_COMMAND="--auth-user-pass $auth"
 }
 
 ### vpn: setup openvpn client
@@ -275,7 +276,8 @@ route6="$dir/.firewall6"
 [[ -f $cert ]] || { [[ $(ls -d $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 \
             ]] && cert="$(ls -d $dir/* | egrep '\.ce?rt$' 2>&-)"; }
 
-[[ "${VPN_AUTH:-""}" ]] && eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN_AUTH)
+[[ "${VPN_AUTH:-""}" ]] && eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< \
+            $VPN_AUTH)
 [[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
 [[ "${DNS:-""}" ]] && dns
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
@@ -294,8 +296,7 @@ done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
 while getopts ":hc:df:a:m:o:p:R:r:v:" opt; do
     case "$opt" in
         h) usage ;;
-        a) eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG)
-           AUTH_COMMAND="--auth-user-pass $auth" ;;
+        a) eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
         c) cert_auth "$OPTARG" ;;
         d) dns ;;
         f) firewall "$OPTARG"; touch $route $route6 ;;
