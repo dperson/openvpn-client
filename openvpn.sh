@@ -205,13 +205,13 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" proto=${5:-udp}\
 #   protocol) optional protocol (defaults to TCP)
 # Return: configured NAT rule
 vpnportforward() { local port="$1" protocol="${2:-tcp}"
-    ip6tables -t nat -A OUTPUT -i tun0 -p $protocol --dport $port -j DNAT \
+    ip6tables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
                 --to-destination ::11:$port 2>/dev/null
     ip6tables -A INPUT -p $protocol -m $protocol --dport $port -j ACCEPT \
                 2>/dev/null
     ip6tables -A FORWARD -i tun0 -p $protocol -m $protocol --dport $port -j \
                 ACCEPT 2>/dev/null
-    iptables -t nat -A OUTPUT -i tun0 -p $protocol --dport $port -j DNAT \
+    iptables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
                 --to-destination 127.0.0.11:$port
     iptables -A INPUT -p $protocol -m $protocol --dport $port -j ACCEPT
     iptables -A FORWARD -i tun0 -p $protocol -m $protocol --dport $port -j \
