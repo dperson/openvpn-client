@@ -21,28 +21,32 @@ set -o nounset                              # Treat unset variables as an error
 ### cert_auth: setup auth passwd for accessing certificate
 # Arguments:
 #   passwd) Password to access the cert
-# Return: conf file that supports certificate authentication
+# Return: openvpn argument to support certificate authentication
 cert_auth() { local passwd="$1"
     grep -q "^${passwd}\$" $cert_auth || {
         echo "$passwd" >$cert_auth
     }
     chmod 0600 $cert_auth
-    grep -q "^askpass ${cert_auth}\$" $conf || {
-        sed -i '/^askpass[[:space:]]/d' $conf
-        echo "askpass $cert_auth" >>$conf
-    }
+    ext_args+=" --askpass $cert_auth"
 }
 
 ### dns: setup openvpn client DNS
 # Arguments:
 #   none)
-# Return: conf file that uses VPN provider's DNS resolvers
+# Return: openvpn arguments to use VPN provider's DNS resolvers
 dns() {
-    sed -i '/^\(down\|up\|#.*resolv-*conf\|script-security\)[[:space:]]/d' $conf
-    echo "# This updates the resolvconf with dns settings" >>$conf
-    echo "script-security 2" >>$conf
-    echo "up /etc/openvpn/up.sh" >>$conf
-    echo "down /etc/openvpn/down.sh" >>$conf
+    ext_args+=" --up /etc/openvpn/up.sh"
+    ext_args+=" --down /etc/openvpn/down.sh"
+}
+
+### filter_embedded_dns: iptables to filter embedded DNS requests
+# Arguments:
+#   none)
+# Return: openvpn arguments to restrict embedded DNS requests
+filter_embedded_dns() {
+    ext_args+=" --route-up '/sbin/iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT'"
+    ext_args+=" --route-pre-down"
+    ext_args+=" '/bin/sh -c \"iptables -D OUTPUT -d 127.0.0.11 -j ACCEPT\"'"
 }
 
 ### firewall: firewall all output not DNS/VPN that's not over the VPN connection
@@ -79,11 +83,11 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     ip6tables -A OUTPUT -o tap+ -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -o tun+ -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -d ${docker6_network} -j ACCEPT 2>/dev/null
-    ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
     ip6tables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null||{
         ip6tables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT 2>/dev/null
-        ip6tables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT 2>/dev/null; }
+        ip6tables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT 2>/dev/null
+        ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null; }
     iptables -F
     iptables -X
     iptables -P INPUT DROP
@@ -97,15 +101,19 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     iptables -A FORWARD -d ${docker_network} -j ACCEPT
     iptables -A FORWARD -s ${docker_network} -j ACCEPT
     iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-    iptables -A OUTPUT -o lo -j ACCEPT
+    iptables -A OUTPUT -o lo ! -d 127.0.0.11 -j ACCEPT
     iptables -A OUTPUT -o tap+ -j ACCEPT
     iptables -A OUTPUT -o tun+ -j ACCEPT
     iptables -A OUTPUT -d ${docker_network} -j ACCEPT
-    iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
     iptables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
         iptables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT
-        iptables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT; }
+        iptables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT
+        iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT; }
+    if grep -Fq "127.0.0.11" /etc/resolv.conf; then
+        iptables -A OUTPUT -d 127.0.0.11 -m owner --gid-owner vpn -j ACCEPT ||
+            iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT
+        iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT; fi
     iptables -t nat -A POSTROUTING -o tap+ -j MASQUERADE
     iptables -t nat -A POSTROUTING -o tun+ -j MASQUERADE
     [[ -s $route6 ]] && for net in $(cat $route6); do return_route6 $net; done
@@ -151,7 +159,7 @@ vpn_auth() { local user="$1" pass="$2"
     echo "$pass" >>$auth
     chmod 0600 $auth
 
-    export AUTH_COMMAND="--auth-user-pass $auth"
+    ext_args+=" --auth-user-pass $auth"
 }
 
 ### vpn: setup openvpn client
@@ -181,19 +189,15 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" proto=${5:-udp}\
     [[ "${AUTH:-""}" ]] && echo "auth $AUTH" >>$conf
     echo "tls-client" >>$conf
     echo "remote-cert-tls server" >>$conf
-    echo "auth-user-pass $auth" >>$conf
     echo "comp-lzo" >>$conf
     echo "verb 1" >>$conf
     echo "reneg-sec 0" >>$conf
-    echo "redirect-gateway def1" >>$conf
     echo "disable-occ" >>$conf
     echo "fast-io" >>$conf
     echo "ca $cert" >>$conf
     [[ $(wc -w <<< $pem) -eq 1 ]] && echo "crl-verify $pem" >>$conf
 
-    echo "$user" >$auth
-    echo "$pass" >>$auth
-    chmod 0600 $auth
+    vpn_auth "$user" "$pass"
 
     [[ "${FIREWALL:-""}" || -e $route6 || -e $route ]] &&
         [[ "${4:-""}" ]] && firewall $port
@@ -271,17 +275,18 @@ conf="$dir/vpn.conf"
 cert="$dir/vpn-ca.crt"
 route="$dir/.firewall"
 route6="$dir/.firewall6"
+ext_args=" --script-security 2 --redirect-gateway def1"
 [[ -f $conf ]] || { [[ $(ls -d $dir/*|egrep '\.(conf|ovpn)$' 2>&-|wc -w) -eq 1 \
             ]] && conf="$(ls -d $dir/* | egrep '\.(conf|ovpn)$' 2>&-)"; }
 [[ -f $cert ]] || { [[ $(ls -d $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 \
             ]] && cert="$(ls -d $dir/* | egrep '\.ce?rt$' 2>&-)"; }
 
-[[ "${VPN_AUTH:-""}" ]] && eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< \
-            $VPN_AUTH)
+[[ "${VPN_AUTH:-""}" ]] &&
+    eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN_AUTH)
 [[ "${CERT_AUTH:-""}" ]] && cert_auth "$CERT_AUTH"
 [[ "${DNS:-""}" ]] && dns
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
-[[ "${FIREWALL:-""}" || -e $route ]] && firewall "${FIREWALL:-""}"
+[[ "${FIREWALL:-""}" || -e $route || -e $route6 ]] && firewall "${FIREWALL:-""}"
 while read i; do
     return_route6 "$i"
 done < <(env | awk '/^ROUTE6[=_]/ {sub (/^[^=]*=/, "", $0); print}')
@@ -312,6 +317,15 @@ while getopts ":hc:df:a:m:o:p:R:r:v:" opt; do
 done
 shift $(( OPTIND - 1 ))
 
+filter_embedded_dns
+
+if [[ -e $auth ]]; then
+    grep -q 'auth-user-pass' <<< $ext_args ||ext_args+=" --auth-user-pass $auth"
+fi
+if [[ -e $cert_auth ]]; then
+    grep -q 'askpass' <<< $ext_args || ext_args+=" --askpass $cert_auth"
+fi
+
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
 elif [[ $# -ge 1 ]]; then
@@ -325,6 +339,6 @@ else
     [[ -e $conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
     [[ -e $cert ]] || grep -Eq '^ *(<ca>|ca +)' $conf ||
         { echo "ERROR: VPN CA cert missing!"; sleep 120; }
-    exec sg vpn -c "openvpn --cd $dir --config $conf ${AUTH_COMMAND:-} \
+    exec sg vpn -c "openvpn --cd $dir --config $conf ${ext_args[*]} \
                ${OTHER_ARGS:-} ${MSS:+--fragment $MSS --mssfix}"
 fi

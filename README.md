@@ -92,11 +92,7 @@ Running the following on your docker host should give you the correct network:
                 -v /some/path:/vpn -d dperson/openvpn-client \
                 -r 192.168.1.0/24 -v 'vpn.server.name;username;password'
 
-**NOTE**: if you don't use the `-v` to configure your VPN, then you'll have to
-make sure that `redirect-gateway def1` is set, otherwise routing may not work.
-Or you could use -o option to pass it : `-o '--redirect-gateway def1'`
-
-**NOTE 2**: if you have a port you want to make available, you have to add the
+**NOTE**: if you have a port you want to make available, you have to add the
 docker `-p` option to the VPN container. The network stack will be reused by
 the second container (that's what `--net=container:vpn` does).
 
