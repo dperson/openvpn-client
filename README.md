@@ -107,6 +107,7 @@ the second container (that's what `--net=container:vpn` does).
                     required arg: '<passwd>'
                     <passwd> password to access the certificate file
         -a '<user;password>' Configure authentication username and password
+        -D          Don't use the connection as the default route
         -d          Use the VPN provider's DNS resolvers
         -f '[port]' Firewall rules so that only the VPN and DNS are allowed to
                     send internet traffic (IE if VPN is down it's offline)
@@ -141,6 +142,7 @@ ENVIRONMENT VARIABLES
 
  * `CERT_AUTH` - As above (-c) provide authentication to access certificate
  * `DNS` - As above (-d) use the VPN provider's DNS resolvers
+ * `DEFAULT_GATEWAY` - As above (-D) if set to 'false', don't use default route
  * `FIREWALL` - As above (-f) setup firewall to disallow net access w/o the VPN
  * `CIPHER` - Set openvpn cipher option when generating conf file with -v
  * `AUTH` - Set openvpn auth option when generating conf file with -v

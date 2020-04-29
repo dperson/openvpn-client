@@ -226,6 +226,7 @@ Options (fields in '[]' are optional, '<>' are required):
                 required arg: '<passwd>'
                 <passwd> password to access the certificate file
     -a '<user;password>' Configure authentication username and password
+    -D          Don't use the connection as the default route
     -d          Use the VPN provider's DNS resolvers
     -f '[port]' Firewall rules so that only the VPN and DNS are allowed to
                 send internet traffic (IE if VPN is down it's offline)
@@ -266,7 +267,7 @@ conf="$dir/vpn.conf"
 cert="$dir/vpn-ca.crt"
 route="$dir/.firewall"
 route6="$dir/.firewall6"
-ext_args="--script-security 2 --redirect-gateway def1"
+export ext_args="--script-security 2 --redirect-gateway def1"
 [[ -f $conf ]] || { [[ $(ls -d $dir/*|egrep '\.(conf|ovpn)$' 2>&-|wc -w) -eq 1 \
             ]] && conf="$(ls -d $dir/* | egrep '\.(conf|ovpn)$' 2>&-)"; }
 [[ -f $cert ]] || { [[ $(ls -d $dir/* | egrep '\.ce?rt$' 2>&- | wc -w) -eq 1 \
@@ -293,11 +294,12 @@ while read i; do
     eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $i)
 done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
 
-while getopts ":hc:df:a:m:o:p:R:r:v:" opt; do
+while getopts ":hc:Ddf:a:m:o:p:R:r:v:" opt; do
     case "$opt" in
         h) usage ;;
         a) eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
         c) cert_auth "$OPTARG" ;;
+        D) DEFAULT_GATEWAY=false ;;
         d) dns ;;
         f) firewall "$OPTARG"; touch $route $route6 ;;
         m) MSS="$OPTARG" ;;
@@ -312,6 +314,8 @@ while getopts ":hc:df:a:m:o:p:R:r:v:" opt; do
 done
 shift $(( OPTIND - 1 ))
 
+[[ ${DEFAULT_GATEWAY:-""} == "false" ]] &&
+            ext_args=$(sed 's/ --redirect-gateway def1//' <<< $ext_args)
 [[ -e $auth ]] && ext_args+=" --auth-user-pass $auth"
 [[ -e $cert_auth ]] && ext_args+=" --askpass $cert_auth"
 
