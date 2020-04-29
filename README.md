@@ -149,6 +149,7 @@ ENVIRONMENT VARIABLES
  * `ROUTE6` - As above (-R) add a route to allow replies to your private network
  * `ROUTE` - As above (-r) add a route to allow replies to your private network
  * `TZ` - Set a timezone, IE `EST5EDT`
+ * `VPN_FILES` - specify the '<corfig>[;cert]' files to use (relative to `/vpn`)
  * `VPN` - As above (-v) setup a VPN connection
  * `VPN_AUTH` - As above (-a) provide authentication to vpn server
  * `VPNPORT` - As above (-p) setup port forwarding (See NOTE below)
@@ -171,7 +172,16 @@ Any of the commands can be run at creation with `docker run` or later with
 
 ### VPN configuration
 
-**NOTE**: When using `-v` a vpn configuration is generated.
+**NOTE**: When using `-v` (`VPN` variable) a vpn configuration is generated.
+
+**NOTE2**: See the `-a` (`VPN_AUTH` variable) to just provide user / password
+authentication to an existing configuration.
+
+**NOTE3**: If the auto detect isn't picking the correct configuration, you can
+use the `VPN_FILES` environment variable. All files must still be in `/vpn`, and
+will only be looked for there. IE, you could use the following to specify the
+`vpn.conf` configuration and `vpn.crt` certificate files:
+`-e VPN_FILES="vpn.conf;vpn.crt`
 
 In order to work you must provide VPN configuration and the certificate. You can
 use external storage for `/vpn`:
