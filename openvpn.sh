@@ -283,7 +283,7 @@ while getopts ":hc:Ddf:a:m:o:p:R:r:v:" opt; do
         c) CERT_AUTH="$OPTARG" ;;
         D) DEFAULT_GATEWAY="false" ;;
         d) DNS="true" ;;
-        f) FILEWALL="true" ;;
+        f) FIREWALL="true" ;;
         m) MSS="$OPTARG" ;;
         o) OTHER_ARGS+=" $OPTARG" ;;
         p) eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
