@@ -102,8 +102,13 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
         iptables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT
         iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT; }
     if grep -Fq "127.0.0.11" /etc/resolv.conf; then
-        iptables -A OUTPUT -d 127.0.0.11 -m owner --gid-owner vpn -j ACCEPT || 
-            iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT
+        iptables -A OUTPUT -d 127.0.0.11 -m owner --gid-owner vpn -j ACCEPT \
+        2>/dev/null && {
+            ext_args+=" --route-up '/sbin/iptables"
+            ext_args+=" -A OUTPUT -d 127.0.0.11 -j ACCEPT'"	
+            ext_args+=" --route-pre-down '/bin/sh -c \"iptables"	
+            ext_args+=" -D OUTPUT -d 127.0.0.11 -j ACCEPT\"'"
+        } || iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT
         iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT; fi
     iptables -t nat -A POSTROUTING -o tap+ -j MASQUERADE
     iptables -t nat -A POSTROUTING -o tun+ -j MASQUERADE
@@ -111,10 +116,6 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     for i in $route6 $route; do [[ -e $i ]] || touch $i; done
     [[ -s $route6 ]] && for net in $(cat $route6); do return_route6 $net; done
     [[ -s $route ]] && for net in $(cat $route); do return_route $net; done
-
-    ext_args+=" --route-up '/sbin/iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT'"	
-    ext_args+=" --route-pre-down"	
-    ext_args+=" '/bin/sh -c \"iptables -D OUTPUT -d 127.0.0.11 -j ACCEPT\"'"
 }
 
 ### return_route: add a route back to your network, so that return traffic works
