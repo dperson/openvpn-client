@@ -108,12 +108,12 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     if grep -Fq "127.0.0.11" /etc/resolv.conf; then
         iptables -A OUTPUT -d 127.0.0.11 -m owner --gid-owner vpn -j ACCEPT \
         2>/dev/null && {
+            iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
             ext_args+=" --route-up '/bin/sh -c \""
             ext_args+=" iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT\"'"	
             ext_args+=" --route-pre-down '/bin/sh -c \""	
             ext_args+=" iptables -D OUTPUT -d 127.0.0.11 -j ACCEPT\"'"
-        } || iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT
-        iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT; fi
+        } || iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT; fi
     iptables -t nat -A POSTROUTING -o tap+ -j MASQUERADE
     iptables -t nat -A POSTROUTING -o tun+ -j MASQUERADE
     [[ -r $firewall_cust ]] && . $firewall_cust
