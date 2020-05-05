@@ -50,6 +50,10 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
         port="$(awk '/^remote / && NF ~ /^[0-9]*$/ {print $NF}' $conf |
                     grep ^ || echo 1194)"
 
+    test -f /proc/net/if_inet6 && { lsmod |grep -qF ip6table_filter || { \
+        echo "WARNING: ip6tables disabled!"
+        echo "Run 'sudo modprobe ip6table_filter' on your host"; };}
+
     ip6tables -F 2>/dev/null
     ip6tables -X 2>/dev/null
     ip6tables -P INPUT DROP 2>/dev/null
@@ -72,11 +76,11 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     ip6tables -A OUTPUT -o tap+ -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -o tun+ -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -d ${docker6_network} -j ACCEPT 2>/dev/null
-    ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
     ip6tables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null||{
         ip6tables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT 2>/dev/null
-        ip6tables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT 2>/dev/null; }
+        ip6tables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT 2>/dev/null
+        ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null; }
     ip6tables -t nat -A POSTROUTING -o tap+ -j MASQUERADE
     ip6tables -t nat -A POSTROUTING -o tun+ -j MASQUERADE
     iptables -F
@@ -96,11 +100,20 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     iptables -A OUTPUT -o tap+ -j ACCEPT
     iptables -A OUTPUT -o tun+ -j ACCEPT
     iptables -A OUTPUT -d ${docker_network} -j ACCEPT
-    iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
     iptables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
         iptables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT
-        iptables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT; }
+        iptables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT
+        iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT; }
+    if grep -Fq "127.0.0.11" /etc/resolv.conf; then
+        iptables -A OUTPUT -d 127.0.0.11 -m owner --gid-owner vpn -j ACCEPT \
+        2>/dev/null && {
+            iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
+            ext_args+=" --route-up '/bin/sh -c \""
+            ext_args+=" iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT\"'"	
+            ext_args+=" --route-pre-down '/bin/sh -c \""	
+            ext_args+=" iptables -D OUTPUT -d 127.0.0.11 -j ACCEPT\"'"
+        } || iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT; fi
     iptables -t nat -A POSTROUTING -o tap+ -j MASQUERADE
     iptables -t nat -A POSTROUTING -o tun+ -j MASQUERADE
     [[ -r $firewall_cust ]] && . $firewall_cust
@@ -197,21 +210,21 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" proto=${5:-udp}\
 # Return: configured NAT rule
 vpnportforward() { local port="$1" protocol="${2:-tcp}"
     ip6tables -t nat -A OUTPUT -i tap+ -p $protocol --dport $port -j DNAT \
-                --to-destination ::11:$port 2>/dev/null &&
+                --to-destination ::111:$port 2>/dev/null &&
     ip6tables -t nat -A OUTPUT -i tun+ -p $protocol --dport $port -j DNAT \
-                --to-destination ::11:$port 2>/dev/null ||
+                --to-destination ::111:$port 2>/dev/null ||
     ip6tables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
-                --to-destination ::11:$port 2>/dev/null
+                --to-destination ::111:$port 2>/dev/null
     ip6tables -A INPUT -p $protocol -m $protocol --dport $port -j ACCEPT \
                 2>/dev/null
     ip6tables -A FORWARD -i tun0 -p $protocol -m $protocol --dport $port -j \
                 ACCEPT 2>/dev/null
     iptables -t nat -A OUTPUT -i tap+ -p $protocol --dport $port -j DNAT \
-                --to-destination 127.0.0.11:$port 2>/dev/null &&
+                --to-destination 127.0.0.111:$port 2>/dev/null &&
     iptables -t nat -A OUTPUT -i tun+ -p $protocol --dport $port -j DNAT \
-                --to-destination 127.0.0.11:$port 2>/dev/null ||
+                --to-destination 127.0.0.111:$port 2>/dev/null ||
     iptables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
-                --to-destination 127.0.0.11:$port
+                --to-destination 127.0.0.111:$port
     iptables -A INPUT -p $protocol -m $protocol --dport $port -j ACCEPT
     iptables -A FORWARD -i tun0 -p $protocol -m $protocol --dport $port -j \
                 ACCEPT
@@ -338,6 +351,6 @@ else
     [[ -e $cert ]] || grep -Eq '^ *(<ca>|ca +)' $conf ||
         { echo "ERROR: VPN CA cert missing!"; sleep 120; }
     set -x
-    exec sg vpn -c "openvpn --cd $dir --config $conf ${ext_args[*]} \
+    exec sg vpn -c "openvpn --cd $dir --config $conf $ext_args \
                ${OTHER_ARGS:-} ${MSS:+--fragment $MSS --mssfix}"
 fi
