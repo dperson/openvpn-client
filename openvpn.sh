@@ -47,8 +47,8 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
             docker6_network="$(ip -o addr show dev eth0 |
             awk '$3 == "inet6" {print $4; exit}')"
     [[ -z "${1:-}" && -r $conf ]] &&
-        port="$(awk '/^remote / && NF ~ /^[0-9]*$/ {print $NF}' $conf |
-                    grep ^ || echo 1194)"
+        port="$(awk -F"[\r\t ]+" '/^remote/ && $3~/^[0-9]+$/{print $3}' $conf |
+                    uniq | grep ^ || echo 1194)"
 
     test -f /proc/net/if_inet6 && { lsmod |grep -qF ip6table_filter || { \
         echo "WARNING: ip6tables disabled!"
@@ -78,8 +78,10 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     ip6tables -A OUTPUT -d ${docker6_network} -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
     ip6tables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null||{
-        ip6tables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT 2>/dev/null
-        ip6tables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT 2>/dev/null
+        for p in $port; do
+            ip6tables -A OUTPUT -p tcp -m tcp --dport $p -j ACCEPT 2>/dev/null
+            ip6tables -A OUTPUT -p udp -m udp --dport $p -j ACCEPT 2>/dev/null
+        done
         ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null; }
     ip6tables -t nat -A POSTROUTING -o tap+ -j MASQUERADE
     ip6tables -t nat -A POSTROUTING -o tun+ -j MASQUERADE
@@ -102,8 +104,10 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     iptables -A OUTPUT -d ${docker_network} -j ACCEPT
     iptables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
-        iptables -A OUTPUT -p tcp -m tcp --dport $port -j ACCEPT
-        iptables -A OUTPUT -p udp -m udp --dport $port -j ACCEPT
+        for p in $port; do
+            iptables -A OUTPUT -p tcp -m tcp --dport $p -j ACCEPT
+            iptables -A OUTPUT -p udp -m udp --dport $p -j ACCEPT
+        done
         iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT; }
     if grep -Fq "127.0.0.11" /etc/resolv.conf; then
         iptables -A OUTPUT -d 127.0.0.11 -m owner --gid-owner vpn -j ACCEPT \
