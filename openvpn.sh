@@ -301,7 +301,7 @@ while getopts ":hc:Ddf:a:m:o:p:R:r:v:" opt; do
         f) FIREWALL="true" ;;
         m) MSS="$OPTARG" ;;
         o) OTHER_ARGS+=" $OPTARG" ;;
-        p) eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
+        p) export VPNPORT_OPT$OPTIND="$OPTARG" ;;
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
         v) VPN="$OPTARG" ;;
