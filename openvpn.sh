@@ -110,8 +110,8 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
         2>/dev/null && {
             iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
             ext_args+=" --route-up '/bin/sh -c \""
-            ext_args+=" iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT\"'"	
-            ext_args+=" --route-pre-down '/bin/sh -c \""	
+            ext_args+=" iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT\"'"
+            ext_args+=" --route-pre-down '/bin/sh -c \""
             ext_args+=" iptables -D OUTPUT -d 127.0.0.11 -j ACCEPT\"'"
         } || iptables -A OUTPUT -d 127.0.0.11 -j ACCEPT; fi
     iptables -t nat -A POSTROUTING -o tap+ -j MASQUERADE
@@ -298,10 +298,10 @@ while getopts ":hc:Ddf:a:m:o:p:R:r:v:" opt; do
         c) CERT_AUTH="$OPTARG" ;;
         D) DEFAULT_GATEWAY="false" ;;
         d) DNS="true" ;;
-        f) FIREWALL="true" ;;
+        f) FIREWALL="$OPTARG" ;;
         m) MSS="$OPTARG" ;;
         o) OTHER_ARGS+=" $OPTARG" ;;
-        p) eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $OPTARG) ;;
+        p) export VPNPORT_OPT$OPTIND="$OPTARG" ;;
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
         v) VPN="$OPTARG" ;;
@@ -314,7 +314,7 @@ shift $(( OPTIND - 1 ))
 [[ "${CERT_AUTH:-}" ]] && cert_auth "$CERT_AUTH"
 [[ "${DNS:-}" ]] && dns
 [[ "${GROUPID:-}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
-[[ "${FIREWALL:-}" || -e $route6 || -e $route ]] && firewall "${FIREWALL:-}"
+[[ ! -z "${FIREWALL+x}" || -e $route6 || -e $route ]] &&firewall "${FIREWALL:-}"
 while read i; do
     return_route6 "$i"
 done < <(env | awk '/^ROUTE6[=_]/ {sub (/^[^=]*=/, "", $0); print}')
