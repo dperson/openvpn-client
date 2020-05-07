@@ -163,11 +163,12 @@ return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
 # Arguments:
 #   none)
 # Return: configured return routes
-global_return_routes() { local gw="$(ip route |awk '/default/ {print $3}')" \
-    gw6="$(ip -6 route |awk '/default/ {print $3}')" \
-    ip=$(hostname -i) \
-    ip6=$(ip -6 addr | grep inet6 | awk -F '[ \t]+|/' '{print $3}' | 
-        grep -v ^::1 | grep -v ^fe80)
+global_return_routes() { local def_if=$(ip r |awk '/^default/{print $5}') \
+    gw=$(ip r |awk '/^default/ {print $3}') \
+    gw6="$(ip -6 r |awk '/^default/ {print $3}')" \
+    ip=$(ip a show dev $def_if | awk -F '[ \t]+|/' '$2=="inet" {print $3}')\
+    ip6=$(ip -6 a show dev $def_if | awk -F '[ \t]+|/' \
+        '$2=="inet6" && $3 !~ /^fe80/ && $3 !="::1" {print $3}')
 
     ip rule add from $ip lookup 10
     ip route add default via $gw table 10
