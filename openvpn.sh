@@ -92,6 +92,8 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     iptables -P OUTPUT DROP
     iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     iptables -A INPUT -i lo -j ACCEPT
+    iptables -A INPUT -i tap+ -j ACCEPT
+    iptables -A INPUT -i tun+ -j ACCEPT
     iptables -A INPUT -s ${docker_network} -j ACCEPT
     iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     iptables -A FORWARD -i lo -j ACCEPT
@@ -132,6 +134,7 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
 # Return: configured return route
 return_route6() { local network="$1" gw="$(ip -6 route |
                 awk '/default/{print $3}')"
+    echo "The use of ROUTE6 or -R is deprecated and not needed anymore!"
     ip -6 route | grep -q "$network" ||
         ip -6 route add to $network via $gw dev eth0
     ip6tables -A INPUT -s $network -j ACCEPT 2>/dev/null
@@ -146,6 +149,7 @@ return_route6() { local network="$1" gw="$(ip -6 route |
 #   network) a CIDR specified network range
 # Return: configured return route
 return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
+    echo "The use of ROUTE or -r is deprecated and not needed anymore!"
     ip route | grep -q "$network" ||
         ip route add to $network via $gw dev eth0
     iptables -A INPUT -s $network -j ACCEPT
@@ -153,6 +157,26 @@ return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
     iptables -A FORWARD -s $network -j ACCEPT
     iptables -A OUTPUT -d $network -j ACCEPT
     [[ -e $route ]] && grep -q "^$network\$" $route || echo "$network" >>$route
+}
+
+### global_return_routes: add a route back to all networks for return traffic
+# Arguments:
+#   none)
+# Return: configured return routes
+global_return_routes() { local gw="$(ip route |awk '/default/ {print $3}')" \
+    gw6="$(ip -6 route |awk '/default/ {print $3}')" \
+    ip=$(hostname -i) \
+    ip6=$(ip -6 addr | grep inet6 | awk -F '[ \t]+|/' '{print $3}' | 
+        grep -v ^::1 | grep -v ^fe80)
+
+    ip rule add from $ip lookup 10
+    ip route add default via $gw table 10
+    iptables -A INPUT -d $ip -j ACCEPT
+
+    [[ -e $ip6 ]] && {
+        ip -6 rule add from $ip6 lookup 10
+        ip -6 route add default via $gw6 table 10
+        ip6tables -A INPUT -d $ip6 -j ACCEPT 2>/dev/null; }
 }
 
 ### vpn_auth: configure authentication username and password
@@ -232,6 +256,7 @@ vpnportforward() { local port="$1" protocol="${2:-tcp}"
     iptables -A INPUT -p $protocol -m $protocol --dport $port -j ACCEPT
     iptables -A FORWARD -i tun0 -p $protocol -m $protocol --dport $port -j \
                 ACCEPT
+    echo "The use of vpnportforward is deprecated, broken and not needed!"
     echo "Setup forwarded port: $port $protocol"
 }
 
@@ -335,6 +360,8 @@ done < <(env | awk '/^ROUTE[=_]/ {sub (/^[^=]*=/, "", $0); print}')
 while read i; do
     eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $i)
 done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
+
+global_return_routes
 
 [[ ${DEFAULT_GATEWAY:-} == "false" ]] &&
             ext_args=$(sed 's/ --redirect-gateway def1//' <<< $ext_args)
