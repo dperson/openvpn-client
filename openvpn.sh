@@ -122,12 +122,35 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     [[ -s $route ]] && for net in $(cat $route); do return_route $net; done
 }
 
+### global_return_routes: add a route back to all networks for return traffic
+# Arguments:
+#   none)
+# Return: configured return routes
+global_return_routes() { local if=$(ip r | awk '/^default/ {print $5; quit}') \
+    gw6="$(ip -6 r show dev $if | awk '/default/ {print $3}')" \
+    gw="$(ip -4 r show dev $if | awk '/default/ {print $3}')" \
+    ip6=$(ip -6 a show dev $if | awk -F '[ \t/]+' '/inet6.*global/ {print $3}')\
+    ip=$(ip -4 a show dev $if | awk -F '[ \t/]+' '/inet .*global/ {print $3}')
+
+    for i in $ip6; do
+        ip -6 rule add from $i lookup 10
+        ip6tables -A INPUT -d $i -j ACCEPT 2>/dev/null
+    done
+    for g in $gw6; do ip -6 route add default via $g table 10; done
+    for i in $ip; do
+        ip rule add from $i lookup 10
+        iptables -A INPUT -d $i -j ACCEPT
+    done
+    for g in $gw; do ip route add default via $g table 10; done
+}
+
 ### return_route: add a route back to your network, so that return traffic works
 # Arguments:
 #   network) a CIDR specified network range
 # Return: configured return route
 return_route6() { local network="$1" gw="$(ip -6 route |
                 awk '/default/{print $3}')"
+    echo "The use of ROUTE6 or -R is deprecated and should no longer be needed!"
     ip -6 route | grep -q "$network" ||
         ip -6 route add to $network via $gw dev eth0
     ip6tables -A INPUT -s $network -j ACCEPT 2>/dev/null
@@ -142,6 +165,7 @@ return_route6() { local network="$1" gw="$(ip -6 route |
 #   network) a CIDR specified network range
 # Return: configured return route
 return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
+    echo "The use of ROUTE or -r is deprecated and should no longer be needed!"
     ip route | grep -q "$network" ||
         ip route add to $network via $gw dev eth0
     iptables -A INPUT -s $network -j ACCEPT
@@ -209,25 +233,9 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" proto=${5:-udp}\
 #   protocol) optional protocol (defaults to TCP)
 # Return: configured NAT rule
 vpnportforward() { local port="$1" protocol="${2:-tcp}"
-    ip6tables -t nat -A OUTPUT -i tap+ -p $protocol --dport $port -j DNAT \
-                --to-destination ::111:$port 2>/dev/null &&
-    ip6tables -t nat -A OUTPUT -i tun+ -p $protocol --dport $port -j DNAT \
-                --to-destination ::111:$port 2>/dev/null ||
-    ip6tables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
-                --to-destination ::111:$port 2>/dev/null
     ip6tables -A INPUT -p $protocol -m $protocol --dport $port -j ACCEPT \
                 2>/dev/null
-    ip6tables -A FORWARD -i tun0 -p $protocol -m $protocol --dport $port -j \
-                ACCEPT 2>/dev/null
-    iptables -t nat -A OUTPUT -i tap+ -p $protocol --dport $port -j DNAT \
-                --to-destination 127.0.0.111:$port 2>/dev/null &&
-    iptables -t nat -A OUTPUT -i tun+ -p $protocol --dport $port -j DNAT \
-                --to-destination 127.0.0.111:$port 2>/dev/null ||
-    iptables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
-                --to-destination 127.0.0.111:$port
     iptables -A INPUT -p $protocol -m $protocol --dport $port -j ACCEPT
-    iptables -A FORWARD -i tun0 -p $protocol -m $protocol --dport $port -j \
-                ACCEPT
     echo "Setup forwarded port: $port $protocol"
 }
 
@@ -301,7 +309,7 @@ while getopts ":hc:Ddf:a:m:o:p:R:r:v:" opt; do
         f) FIREWALL="$OPTARG" ;;
         m) MSS="$OPTARG" ;;
         o) OTHER_ARGS+=" $OPTARG" ;;
-        p) export VPNPORT_OPT$OPTIND="$OPTARG" ;;
+        p) export VPNPORT$OPTIND="$OPTARG" ;;
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
         v) VPN="$OPTARG" ;;
@@ -331,6 +339,8 @@ done < <(env | awk '/^ROUTE[=_]/ {sub (/^[^=]*=/, "", $0); print}')
 while read i; do
     eval vpnportforward $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $i)
 done < <(env | awk '/^VPNPORT[0-9=_]/ {sub (/^[^=]*=/, "", $0); print}')
+
+global_return_routes
 
 [[ ${DEFAULT_GATEWAY:-} == "false" ]] &&
             ext_args=$(sed 's/ --redirect-gateway def1//' <<< $ext_args)
