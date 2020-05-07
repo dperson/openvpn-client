@@ -92,8 +92,6 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     iptables -P OUTPUT DROP
     iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     iptables -A INPUT -i lo -j ACCEPT
-    iptables -A INPUT -i tap+ -j ACCEPT
-    iptables -A INPUT -i tun+ -j ACCEPT
     iptables -A INPUT -s ${docker_network} -j ACCEPT
     iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
     iptables -A FORWARD -i lo -j ACCEPT
@@ -238,26 +236,12 @@ vpn() { local server="$1" user="$2" pass="$3" port="${4:-1194}" proto=${5:-udp}\
 #   protocol) optional protocol (defaults to TCP)
 # Return: configured NAT rule
 vpnportforward() { local port="$1" protocol="${2:-tcp}"
-    ip6tables -t nat -A OUTPUT -i tap+ -p $protocol --dport $port -j DNAT \
-                --to-destination ::111:$port 2>/dev/null &&
-    ip6tables -t nat -A OUTPUT -i tun+ -p $protocol --dport $port -j DNAT \
-                --to-destination ::111:$port 2>/dev/null ||
-    ip6tables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
-                --to-destination ::111:$port 2>/dev/null
-    ip6tables -A INPUT -p $protocol -m $protocol --dport $port -j ACCEPT \
+    ip6tables -A INPUT -i tun+ -p $protocol -m $protocol --dport $port -j ACCEPT \
                 2>/dev/null
-    ip6tables -A FORWARD -i tun0 -p $protocol -m $protocol --dport $port -j \
-                ACCEPT 2>/dev/null
-    iptables -t nat -A OUTPUT -i tap+ -p $protocol --dport $port -j DNAT \
-                --to-destination 127.0.0.111:$port 2>/dev/null &&
-    iptables -t nat -A OUTPUT -i tun+ -p $protocol --dport $port -j DNAT \
-                --to-destination 127.0.0.111:$port 2>/dev/null ||
-    iptables -t nat -A OUTPUT -p $protocol --dport $port -j DNAT \
-                --to-destination 127.0.0.111:$port
-    iptables -A INPUT -p $protocol -m $protocol --dport $port -j ACCEPT
-    iptables -A FORWARD -i tun0 -p $protocol -m $protocol --dport $port -j \
-                ACCEPT
-    echo "The use of vpnportforward is deprecated, broken and not needed!"
+    ip6tables -A INPUT -i tap+ -p $protocol -m $protocol --dport $port -j ACCEPT \
+                2>/dev/null
+    iptables -A INPUT -i tun+ -p $protocol -m $protocol --dport $port -j ACCEPT
+    iptables -A INPUT -i tap+ -p $protocol -m $protocol --dport $port -j ACCEPT
     echo "Setup forwarded port: $port $protocol"
 }
 
