@@ -160,6 +160,10 @@ ENVIRONMENT VARIABLES
  **NOTE**: optionally supports additional variables starting with the same name,
  IE `VPNPORT` also will work for `VPNPORT_2`, `VPNPORT_3`... `VPNPORT_x`, etc.
 
+ **NOTE2**: if you are using `-d` or `DNS` and set the container as read-only,
+you will get errors as it tries to write to `/etc/resolv.conf`, the 2 are
+incompatible.
+
 ## Examples
 
 Any of the commands can be run at creation with `docker run` or later with

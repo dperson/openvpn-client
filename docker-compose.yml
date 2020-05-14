@@ -10,6 +10,7 @@ services:
       TZ: 'EST5EDT'
     networks:
       - default
+    # if using '-d' or 'DNS' you can't enable the `read_only: true` option
     read_only: true
     tmpfs:
       - /run
