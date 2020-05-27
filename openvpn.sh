@@ -160,7 +160,7 @@ global_return_routes() { local if=$(ip r | awk '/^default/ {print $5; quit}')
 # Return: configured return route
 return_route6() { local network="$1" gw="$(ip -6 route |
                 awk '/default/ {print $3}')"
-    echo "The use of ROUTE6 or -R is deprecated and should no longer be needed!"
+    echo "The use of ROUTE6 or -R may no longer be needed, try it without!!"
     ip -6 route | grep -q "$network" ||
         ip -6 route add to $network via $gw dev eth0
     ip6tables -A INPUT -s $network -j ACCEPT 2>/dev/null
@@ -175,7 +175,7 @@ return_route6() { local network="$1" gw="$(ip -6 route |
 #   network) a CIDR specified network range
 # Return: configured return route
 return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
-    echo "The use of ROUTE or -r is deprecated and should no longer be needed!"
+    echo "The use of ROUTE or -r may no longer be needed, try it without!"
     ip route | grep -q "$network" ||
         ip route add to $network via $gw dev eth0
     iptables -A INPUT -s $network -j ACCEPT
