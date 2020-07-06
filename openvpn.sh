@@ -143,7 +143,7 @@ global_return_routes() { local if=$(ip r | awk '/^default/ {print $5; quit}')
             ip6tables -A INPUT -d $i -j ACCEPT 2>/dev/null
     done
     for g in $gw6; do
-        ip -6 route show table 10 | grep -q "$i\\>" || 
+        ip -6 route show table 10 | grep -q "$g\\>" || 
             ip -6 route add default via $g table 10
     done
 
@@ -153,7 +153,7 @@ global_return_routes() { local if=$(ip r | awk '/^default/ {print $5; quit}')
         iptables -S | grep -q "$i\\>" || iptables -A INPUT -d $i -j ACCEPT
     done
     for g in $gw; do
-        ip -4 route show table 10 | grep -q "$i\\>" || 
+        ip -4 route show table 10 | grep -q "$g\\>" || 
             ip route add default via $g table 10
     done
 }
