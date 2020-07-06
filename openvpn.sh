@@ -137,20 +137,24 @@ global_return_routes() { local if=$(ip r | awk '/^default/ {print $5; quit}')
     ip=$(ip -4 a show dev $if | awk -F '[ \t/]+' '/inet .*global/ {print $3}')
 
     for i in $ip6; do
-        ip -6 rule | grep -q "$i\\>" || ip -6 rule add from $i lookup 10
+        ip -6 rule show table 10 | grep -q "$i\\>" || 
+            ip -6 rule add from $i lookup 10
         ip6tables -S 2>/dev/null | grep -q "$i\\>" ||
-                    ip6tables -A INPUT -d $i -j ACCEPT 2>/dev/null
+            ip6tables -A INPUT -d $i -j ACCEPT 2>/dev/null
     done
     for g in $gw6; do
-        ip -6 route | grep -q "$i\\>" || ip -6 route add default via $g table 10
+        ip -6 route show table 10 | grep -q "$i\\>" || 
+            ip -6 route add default via $g table 10
     done
 
     for i in $ip; do
-        ip -4 rule | grep -q "$i\\>" || ip rule add from $i lookup 10
+        ip -4 rule show table 10 | grep -q "$i\\>" || 
+            ip rule add from $i lookup 10
         iptables -S | grep -q "$i\\>" || iptables -A INPUT -d $i -j ACCEPT
     done
     for g in $gw; do
-        ip -4 route | grep -q "$i\\>" || ip route add default via $g table 10
+        ip -4 route show table 10 | grep -q "$i\\>" || 
+            ip route add default via $g table 10
     done
 }
 
