@@ -78,9 +78,9 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     ip6tables -A OUTPUT -d ${docker6_network} -j ACCEPT 2>/dev/null
     ip6tables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
     ip6tables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null||{
-        for p in $port; do
-            ip6tables -A OUTPUT -p tcp -m tcp --dport $p -j ACCEPT 2>/dev/null
-            ip6tables -A OUTPUT -p udp -m udp --dport $p -j ACCEPT 2>/dev/null
+        for i in $port; do
+            ip6tables -A OUTPUT -p tcp -m tcp --dport $i -j ACCEPT 2>/dev/null
+            ip6tables -A OUTPUT -p udp -m udp --dport $i -j ACCEPT 2>/dev/null
         done
         ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null; }
     ip6tables -t nat -A POSTROUTING -o tap+ -j MASQUERADE
@@ -104,9 +104,9 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
     iptables -A OUTPUT -d ${docker_network} -j ACCEPT
     iptables -A OUTPUT -p tcp -m owner --gid-owner vpn -j ACCEPT 2>/dev/null &&
     iptables -A OUTPUT -p udp -m owner --gid-owner vpn -j ACCEPT || {
-        for p in $port; do
-            iptables -A OUTPUT -p tcp -m tcp --dport $p -j ACCEPT
-            iptables -A OUTPUT -p udp -m udp --dport $p -j ACCEPT
+        for i in $port; do
+            iptables -A OUTPUT -p tcp -m tcp --dport $i -j ACCEPT
+            iptables -A OUTPUT -p udp -m udp --dport $i -j ACCEPT
         done
         iptables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT; }
     if grep -Fq "127.0.0.11" /etc/resolv.conf; then
@@ -137,20 +137,24 @@ global_return_routes() { local if=$(ip r | awk '/^default/ {print $5; quit}')
     ip=$(ip -4 a show dev $if | awk -F '[ \t/]+' '/inet .*global/ {print $3}')
 
     for i in $ip6; do
-        ip -6 rule | grep -q "$i\\>" || ip -6 rule add from $i lookup 10
+        ip -6 rule show table 10 | grep -q "$i\\>" ||
+            ip -6 rule add from $i lookup 10
         ip6tables -S 2>/dev/null | grep -q "$i\\>" ||
-                    ip6tables -A INPUT -d $i -j ACCEPT 2>/dev/null
+            ip6tables -A INPUT -d $i -j ACCEPT 2>/dev/null
     done
-    for g in $gw6; do
-        ip -6 route | grep -q "$i\\>" || ip -6 route add default via $g table 10
+    for i in $gw6; do
+        ip -6 route show table 10 | grep -q "$i\\>" ||
+            ip -6 route add default via $i table 10
     done
 
     for i in $ip; do
-        ip -4 rule | grep -q "$i\\>" || ip rule add from $i lookup 10
+        ip -4 rule show table 10 | grep -q "$i\\>" ||
+            ip rule add from $i lookup 10
         iptables -S | grep -q "$i\\>" || iptables -A INPUT -d $i -j ACCEPT
     done
-    for g in $gw; do
-        ip -4 route | grep -q "$i\\>" || ip route add default via $g table 10
+    for i in $gw; do
+        ip -4 route show table 10 | grep -q "$i\\>" ||
+            ip route add default via $i table 10
     done
 }
 
