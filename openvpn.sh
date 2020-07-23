@@ -18,6 +18,23 @@
 
 set -o nounset                              # Treat unset variables as an error
 
+### log_warn: send message to stderr with orange txt
+# Arguments:
+#   msg) text to send
+# Return: none
+log_warn() {
+    printf  "\e[43mWARNING:\e[0m %b\n" "$*" > /dev/stderr;
+}
+
+### log_err: send message to stderr with red txt
+# Arguments:
+#   msg) text to send
+# Return: none
+log_err() {
+    printf  "\e[41mERROR:\e[0m %b\n" "$*" > /dev/stderr;
+}
+
+
 ### cert_auth: setup auth passwd for accessing certificate
 # Arguments:
 #   passwd) Password to access the cert
@@ -51,8 +68,8 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
                     uniq | grep ^ || echo 1194)"
 
     test -f /proc/net/if_inet6 && { lsmod |grep -qF ip6table_filter || { \
-        echo "WARNING: ip6tables disabled!"
-        echo "Run 'sudo modprobe ip6table_filter' on your host"; };}
+        og_warn "WARNING: ip6tables disabled!"
+        log_warn "Run 'sudo modprobe ip6table_filter' on your host"; };}
 
     ip6tables -F 2>/dev/null
     ip6tables -X 2>/dev/null
@@ -164,7 +181,7 @@ global_return_routes() { local if=$(ip r | awk '/^default/ {print $5; quit}')
 # Return: configured return route
 return_route6() { local network="$1" gw="$(ip -6 route |
                 awk '/default/ {print $3}')"
-    echo "The use of ROUTE6 or -R may no longer be needed, try it without!!"
+    log_warn "The use of ROUTE6 or -R may no longer be needed, try it without!!"
     ip -6 route | grep -q "$network" ||
         ip -6 route add to $network via $gw dev eth0
     ip6tables -A INPUT -s $network -j ACCEPT 2>/dev/null
@@ -179,7 +196,7 @@ return_route6() { local network="$1" gw="$(ip -6 route |
 #   network) a CIDR specified network range
 # Return: configured return route
 return_route() { local network="$1" gw="$(ip route |awk '/default/ {print $3}')"
-    echo "The use of ROUTE or -r may no longer be needed, try it without!"
+    log_warn "The use of ROUTE or -r may no longer be needed, try it without!"
     ip route | grep -q "$network" ||
         ip route add to $network via $gw dev eth0
     iptables -A INPUT -s $network -j ACCEPT
@@ -327,8 +344,8 @@ while getopts ":hc:Ddf:a:m:o:p:R:r:v:" opt; do
         R) return_route6 "$OPTARG" ;;
         r) return_route "$OPTARG" ;;
         v) VPN="$OPTARG" ;;
-        "?") echo "Unknown option: -$OPTARG"; usage 1 ;;
-        ":") echo "No argument value for option: -$OPTARG"; usage 2 ;;
+        "?") log_warn "Unknown option: -$OPTARG"; usage 1 ;;
+        ":") log_warn "No argument value for option: -$OPTARG"; usage 2 ;;
     esac
 done
 shift $(( OPTIND - 1 ))
@@ -364,16 +381,16 @@ global_return_routes
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
 elif [[ $# -ge 1 ]]; then
-    echo "ERROR: command not found: $1"
+    log_err "command not found: $1"
     exit 13
 elif ps -ef | egrep -v 'grep|openvpn.sh' | grep -q openvpn; then
-    echo "Service already running, please restart container to apply changes"
+    log_err "Service already running, please restart container to apply changes"
 else
     mkdir -p /dev/net
     [[ -c /dev/net/tun ]] || mknod -m 0666 /dev/net/tun c 10 200
-    [[ -e $conf ]] || { echo "ERROR: VPN not configured!"; sleep 120; }
+    [[ -e $conf ]] || { log_err "VPN not configured!"; sleep 120; }
     [[ -e $cert ]] || grep -Eq '^ *(<ca>|ca +)' $conf ||
-        { echo "ERROR: VPN CA cert missing!"; sleep 120; }
+        { log_err "VPN CA cert missing!"; sleep 120; }
     set -x
     exec sg vpn -c "openvpn --cd $dir --config $conf $ext_args \
                ${OTHER_ARGS:-} ${MSS:+--fragment $MSS --mssfix}"
