@@ -68,7 +68,7 @@ firewall() { local port="${1:-1194}" docker_network="$(ip -o addr show dev eth0|
                     uniq | grep ^ || echo 1194)"
 
     test -f /proc/net/if_inet6 && { lsmod |grep -qF ip6table_filter || { \
-        og_warn "WARNING: ip6tables disabled!"
+        log_warn "WARNING: ip6tables disabled!"
         log_warn "Run 'sudo modprobe ip6table_filter' on your host"; };}
 
     ip6tables -F 2>/dev/null
