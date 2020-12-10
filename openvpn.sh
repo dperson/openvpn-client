@@ -200,6 +200,17 @@ vpn_auth() { local user="$1" pass="$2"
     chmod 0600 $auth
 }
 
+### vpn_cert: configure certificate file
+# Arguments:
+#   cert) The part between "-----BEGIN CERTIFICATE-----" and "-----END CERTIFICATE-----"
+# Return: configured cert file
+vpn_cert() { local payload="$1"
+    echo "-----BEGIN CERTIFICATE-----" >$cert
+    echo "$payload" >>$cert
+    echo "-----END CERTIFICATE-----" >>$cert
+    chmod 0600 $cert
+}
+
 ### vpn: setup openvpn client
 # Arguments:
 #   server) VPN GW server
@@ -264,6 +275,7 @@ Options (fields in '[]' are optional, '<>' are required):
     -c '<passwd>' Configure an authentication password to open the cert
                 required arg: '<passwd>'
                 <passwd> password to access the certificate file
+    -C '---BEGIN CERT---...---END CERT---' Allows to set /vpn/vpn-ca.crt via command line.
     -a '<user;password>' Configure authentication username and password
     -D          Don't use the connection as the default route
     -d          Use the VPN provider's DNS resolvers
@@ -318,6 +330,7 @@ while getopts ":hc:Ddf:a:m:o:p:R:r:v:" opt; do
         h) usage ;;
         a) VPN_AUTH="$OPTARG" ;;
         c) CERT_AUTH="$OPTARG" ;;
+        C) VPN_CERT="$OPTARG" ;;
         D) DEFAULT_GATEWAY="false" ;;
         d) DNS="true" ;;
         f) FIREWALL="$OPTARG" ;;
@@ -345,6 +358,8 @@ while read i; do
 done < <(env | awk '/^ROUTE[=_]/ {sub (/^[^=]*=/, "", $0); print}')
 [[ "${VPN_AUTH:-}" ]] &&
     eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN_AUTH)
+[[ "${VPN_CERT:-}" ]] &&
+    eval vpn_cert $(sed -E 's/^-+BEGIN CERTIFICATE-+//g; s/-+END CERTIFICATE-+$//g;' <<< $VPN_CERT)
 [[ "${VPN_FILES:-}" ]] && { [[ -e $dir/$(cut -d';' -f1 <<< $VPN_FILES) ]] &&
                 conf=$dir/$(cut -d';' -f1 <<< $VPN_FILES)
     [[ -e $dir/$(cut -d';' -f2 <<< $VPN_FILES) ]] &&
@@ -360,6 +375,14 @@ global_return_routes
             ext_args=$(sed 's/ --redirect-gateway def1//' <<< $ext_args)
 [[ -e $auth ]] && ext_args+=" --auth-user-pass $auth"
 [[ -e $cert_auth ]] && ext_args+=" --askpass $cert_auth"
+
+ls -lah /vpn
+echo "---- vpn-ca.crt ----"
+cat /vpn/vpn-ca.crt || echo "no vpn-ca.crt file"
+echo "---- vpn.auth ----"
+cat /vpn/vpn.auth || echo "no vpn.auth file"
+echo "---- vpn.conf ----"
+cat /vpn/vpn.conf || echo "no vpn.conf file"
 
 if [[ $# -ge 1 && -x $(which $1 2>&-) ]]; then
     exec "$@"
