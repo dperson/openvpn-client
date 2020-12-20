@@ -27,6 +27,14 @@ services:
     #  - ./vpn:/vpn
     # command: 'server;user;password[;port]'
 
+  autoheal:
+    image: willfarrell/autoheal
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: all
+
   # Replace "service1" with and image with an actual service you want to run
   service1:
     image: docker_hub_user/container_name
