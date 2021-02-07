@@ -8,6 +8,8 @@ services:
       - net_admin
     environment:
       TZ: 'EST5EDT'
+    labels:
+      autoheal: true
     networks:
       - default
     # if using '-d' or 'DNS' you can't enable the `read_only: true` option
@@ -32,8 +34,6 @@ services:
     volumes:
     - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
-    environment:
-      AUTOHEAL_CONTAINER_LABEL: all
 
   # Replace "service1" with and image with an actual service you want to run
   service1:
@@ -42,6 +42,8 @@ services:
       - vpn
     environment:
       TZ: 'EST5EDT'
+    labels:
+      autoheal: true
     network_mode: "service:vpn"
     restart: unless-stopped
     stdin_open: true
