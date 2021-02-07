@@ -8,6 +8,8 @@ services:
       - net_admin
     environment:
       TZ: 'EST5EDT'
+    labels:
+      autoheal: true
     networks:
       - default
     # if using '-d' or 'DNS' you can't enable the `read_only: true` option
@@ -27,6 +29,12 @@ services:
     #  - ./vpn:/vpn
     # command: 'server;user;password[;port]'
 
+  autoheal:
+    image: willfarrell/autoheal
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
   # Replace "service1" with and image with an actual service you want to run
   service1:
     image: docker_hub_user/container_name
@@ -34,6 +42,8 @@ services:
       - vpn
     environment:
       TZ: 'EST5EDT'
+    labels:
+      autoheal: true
     network_mode: "service:vpn"
     restart: unless-stopped
     stdin_open: true
