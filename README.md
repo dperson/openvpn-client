@@ -263,6 +263,12 @@ but adding your vpn user and password by command line
     sudo docker run -it --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
             -v /some/path:/vpn -d dperson/openvpn-client -a 'username;password'
 
+**Note:** If you are using a downloaded configuration file from a VPN provider, you may see errors relating to "/etc/openvpn/update-resolv-conf".
+This script does not exist in Alpine linux, so you should change the `up` and `down` lines in your providers' config file to this instead:
+
+    up /etc/openvpn/up.sh
+    down /etc/openvpn/down.sh
+
 # User Feedback
 
 ## Issues
