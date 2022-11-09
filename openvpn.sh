@@ -344,7 +344,7 @@ while read i; do
     return_route "$i"
 done < <(env | awk '/^ROUTE[=_]/ {sub (/^[^=]*=/, "", $0); print}')
 [[ "${VPN_AUTH:-}" ]] &&
-    eval vpn_auth $(sed 's/^/"/; s/$/"/; s/;/" "/g' <<< $VPN_AUTH)
+    eval vpn_auth $(sed 's/;.*//' <<< $VPN_AUTH ) $(sed 's/^[^;]*;//' <<< $VPN_AUTH)
 [[ "${VPN_FILES:-}" ]] && { [[ -e $dir/$(cut -d';' -f1 <<< $VPN_FILES) ]] &&
                 conf=$dir/$(cut -d';' -f1 <<< $VPN_FILES)
     [[ -e $dir/$(cut -d';' -f2 <<< $VPN_FILES) ]] &&
