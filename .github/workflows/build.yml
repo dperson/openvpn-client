@@ -1,0 +1,73 @@
+---
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+  # cron to run every sunday at 00:00 UTC
+  schedule:
+    - cron: "0 0 * * 0"
+
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      # build docker image
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          pull: true
+          push: false
+          tags: current-build
+#          tags: |
+#            ghcr.io/utkuozdemir/dperson-pv-migrate:build
+      - name: Extract alpine version into a variable
+        id: extract_alpine_version
+        run: |
+          ALPINE_VERSION=$(docker run --rm -it current-build cat /etc/os-release | \
+            grep VERSION_ID | \
+            awk -F'=' ' { print $NF } ') | \
+            tr -d '[:space:]'
+          echo "Extracted ALPINE_VERSION=$ALPINE_VERSION"
+          echo "ALPINE_VERSION=$(echo $ALPINE_VERSION)" >> $GITHUB_ENV
+      - name: Extract openvpn version from into a variable
+        id: extract_openvpn_version
+        run: |
+          OPENVPN_VERSION=$(docker run --rm -it current-build openvpn --version | \
+            grep -o 'OpenVPN [0-9.]*' | \
+            awk '{print $2}' | \
+            tr -d '[:space:]'
+          echo "Extracted OPENVPN_VERSION=$OPENVPN_VERSION"
+          echo "OPENVPN_VERSION=$(echo $OPENVPN_VERSION)" >> $GITHUB_ENV
+      - name: Re-tag the image with alpine and openvpn versions
+        run: |
+          docker tag current-build ghcr.io/utkuozdemir/dperson-pv-migrate:alpine-$ALPINE_VERSION-openvpn-$OPENVPN_VERSION
+          docker tag current-build ghcr.io/utkuozdemir/dperson-pv-migrate:latest
+      - name: Push the image to ghcr.io if this is not a pull request
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/build-push-action@v5
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          repository: utkuozdemir/dperson-pv-migrate
+          tags: |
+            ghcr.io/utkuozdemir/dperson-pv-migrate:alpine-$ALPINE_VERSION-openvpn-$OPENVPN_VERSION
+            ghcr.io/utkuozdemir/dperson-pv-migrate:latest
