@@ -3,3 +3,6 @@ LICENSE
 README.md
 logo.png
 docker-compose.yml
+flake.nix
+flake.lock
+justfile

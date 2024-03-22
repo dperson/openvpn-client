@@ -1,5 +1,16 @@
 [![logo](https://raw.githubusercontent.com/dperson/openvpn-client/master/logo.png)](https://openvpn.net/)
 
+# NOTICE
+This repository is a fork of the original `openvpn-client` project created by Derek Person, which can be found at: [https://github.com/dperson/openvpn-client](https://github.com/dperson/openvpn-client)
+
+We would like to extend our sincere gratitude to Derek Person for creating and maintaining this excellent OpenVPN client project. Our motivation for forking this repository is to make modifications and improvements based on our specific use cases and requirements.
+
+Please note that this fork may contain changes that are not present in the original repository.
+
+If you are using this OpenVPN client for your projects and require assistance, please consider reaching out to us or opening an issue in this repository. If your concern is better addressed in the original project, we kindly ask that you open an issue there instead.
+
+Happy networking! 🚀🔓
+
 # OpenVPN
 
 This is an OpenVPN client docker container. It makes routing containers'

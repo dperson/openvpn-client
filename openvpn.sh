@@ -335,8 +335,8 @@ shift $(( OPTIND - 1 ))
 
 [[ "${CERT_AUTH:-}" ]] && cert_auth "$CERT_AUTH"
 [[ "${DNS:-}" ]] && dns
-[[ "${GROUPID:-}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
-[[ ! -z "${FIREWALL+x}" || -e $route6 || -e $route ]] &&firewall "${FIREWALL:-}"
+[[ "${GROUPID:-}" =~ ^[0-9]+$ ]] && groupmod -g "$GROUPID" -o vpn
+[[ ! -n "${FIREWALL+x}" || -e $route6 || -e $route ]] &&firewall "${FIREWALL:-}"
 while read i; do
     return_route6 "$i"
 done < <(env | awk '/^ROUTE6[=_]/ {sub (/^[^=]*=/, "", $0); print}')
